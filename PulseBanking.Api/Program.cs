@@ -1,5 +1,6 @@
 using PulseBanking.Application;
 using PulseBanking.Infrastructure;
+using PulseBanking.Infrastructure.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Add tenant middleware early in the pipeline, but after error handling/logging
+app.UseTenantMiddleware();
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
