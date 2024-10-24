@@ -1,10 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Update src/PulseBanking.Infrastructure/DependencyInjection.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PulseBanking.Application.Interfaces;
 using PulseBanking.Infrastructure.Persistence;
 using PulseBanking.Infrastructure.Services;
-using System;
+using Microsoft.AspNetCore.Http;
 
 namespace PulseBanking.Infrastructure;
 
@@ -22,7 +23,8 @@ public static class DependencyInjection
         services.AddScoped<IApplicationDbContext>(provider =>
             provider.GetRequiredService<ApplicationDbContext>());
 
-        services.AddTransient<IDateTime, DateTimeService>();
+        services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+        services.AddScoped<ITenantService, TenantService>();
 
         return services;
     }

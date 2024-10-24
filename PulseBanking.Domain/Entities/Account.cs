@@ -1,24 +1,24 @@
-﻿using PulseBanking.Domain.Enums;
+﻿// Update src/PulseBanking.Domain/Entities/Account.cs
+using PulseBanking.Domain.Common;
+using PulseBanking.Domain.Enums;
 using PulseBanking.Domain.Exceptions;
 
 namespace PulseBanking.Domain.Entities;
 
-public class Account
+public class Account : BaseEntity
 {
-    public Guid Id { get; private init; }
-    public required string Number { get; init; }  // removed 'private'
+    public required string Number { get; init; }
     public decimal Balance { get; private set; }
     public AccountStatus Status { get; private set; }
 
-    // Protected constructor for testing
     protected Account() { }
 
-    // Factory method for creating accounts
-    public static Account Create(Guid id, string number, decimal initialBalance = 0, AccountStatus status = AccountStatus.Active)
+    public static Account Create(string tenantId, string number, decimal initialBalance = 0, AccountStatus status = AccountStatus.Active)
     {
         return new Account
         {
-            Id = id,
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
             Number = number,
             Balance = initialBalance,
             Status = status

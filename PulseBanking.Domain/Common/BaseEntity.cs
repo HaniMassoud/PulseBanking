@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// Update src/PulseBanking.Domain/Common/BaseEntity.cs
+namespace PulseBanking.Domain.Common;
 
-namespace PulseBanking.Domain.Common
+public abstract class BaseEntity
 {
-    internal class BaseEntity
-    {
-    }
+    public Guid Id { get; protected init; }  // Changed from private to protected
+    public required string TenantId { get; init; }
 }
