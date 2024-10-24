@@ -26,6 +26,8 @@ public static class DependencyInjection
         services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
         services.AddScoped<ITenantService, TenantService>();
 
+        services.AddSingleton<ITenantManager, TenantManager>();
+
         return services;
     }
 }

@@ -1,17 +1,20 @@
 ﻿// Update src/PulseBanking.Infrastructure/Middleware/TenantMiddleware.cs
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
+using PulseBanking.Application.Interfaces;
 
 namespace PulseBanking.Infrastructure.Middleware;
 
 public class TenantMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly ITenantManager _tenantManager;
     private const string TENANT_HEADER = "X-TenantId";
 
-    public TenantMiddleware(RequestDelegate next)
+    public TenantMiddleware(RequestDelegate next, ITenantManager tenantManager)
     {
         _next = next;
+        _tenantManager = tenantManager;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -28,6 +31,26 @@ public class TenantMiddleware
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
             var response = JsonSerializer.Serialize(new { error = $"{TENANT_HEADER} header cannot be empty" });
+            await context.Response.WriteAsync(response);
+            return;
+        }
+
+        // Validate tenant exists and is active
+        try
+        {
+            var tenant = await _tenantManager.GetTenantAsync(tenantId!);
+            if (!tenant.IsActive)
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                var response = JsonSerializer.Serialize(new { error = "Tenant is not active" });
+                await context.Response.WriteAsync(response);
+                return;
+            }
+        }
+        catch (KeyNotFoundException)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            var response = JsonSerializer.Serialize(new { error = "Invalid tenant" });
             await context.Response.WriteAsync(response);
             return;
         }
