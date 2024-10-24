@@ -1,0 +1,89 @@
+## .NET Core
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+*.lock.json
+*.dll.config
+*.cache
+*.nuget.props
+*.nuget.targets
+
+## Visual Studio
+.vs/
+*.launch.json
+*.vscode/
+*.project.lock.json
+project.lock.json
+artifacts/
+
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+## Visual Studio cache/options directory
+.vs/
+
+## MSTest test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+## NuGet Packages
+*.nupkg
+**/packages/*
+!**/packages/build/
+*.nuget.props
+*.nuget.targets
+
+## User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+## Rider
+.idea/
+*.sln.iml
+
+## Local History
+.localhistory/
+
+## Database Files
+*.mdf
+*.ldf
+*.ndf
+
+## Logs
+*.log
+logs/
+
+## Environment Files
+.env
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+
+## Others
+*.swp
+*.*~
+*.dbmdl
+*.dbproj.schemaview
+*.pfx
+*.publishsettings
+node_modules/
+orleans.codegen.cs
