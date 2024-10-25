@@ -33,6 +33,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
         modelBuilder.Entity<Account>().HasQueryFilter(
             a => _currentTenantId == null || a.TenantId == _currentTenantId);
     }
