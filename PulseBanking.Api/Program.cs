@@ -1,3 +1,4 @@
+using Microsoft.OpenApi.Models;
 using PulseBanking.Application;
 using PulseBanking.Infrastructure;
 using PulseBanking.Infrastructure.Middleware;
@@ -11,7 +12,35 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Pulse Banking API", Version = "v1" });
+
+    // Add support for the X-TenantId header
+    c.AddSecurityDefinition("TenantId", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.ApiKey,
+        Name = "X-TenantId",
+        In = ParameterLocation.Header,
+        Description = "Please enter your tenant ID"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "TenantId"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
 
 
 var app = builder.Build();

@@ -23,7 +23,6 @@
     <Folder Include="Common\Behaviors\" />
     <Folder Include="Common\Exceptions\" />
     <Folder Include="Common\Interfaces\" />
-    <Folder Include="Common\Models\" />
     <Folder Include="Features\Accounts\Commands\CreateAccount\" />
     <Folder Include="Features\Accounts\Queries\GetAccount\" />
     <Folder Include="Features\Transactions\Commands\CreateTransaction\" />
