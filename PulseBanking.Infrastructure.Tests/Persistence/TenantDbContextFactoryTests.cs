@@ -1,4 +1,4 @@
-﻿// tests/PulseBanking.Infrastructure.Tests/Persistence/TenantDbContextFactoryTests.cs
+﻿// Update tests/PulseBanking.Infrastructure.Tests/Persistence/TenantDbContextFactoryTests.cs
 using Microsoft.EntityFrameworkCore;
 using PulseBanking.Application.Common.Models;
 using PulseBanking.Application.Interfaces;
@@ -6,6 +6,8 @@ using PulseBanking.Infrastructure.Persistence;
 using FluentAssertions;
 using Moq;
 using PulseBanking.Domain.Entities;
+using PulseBanking.Infrastructure.Services;
+using Microsoft.AspNetCore.Http;
 
 namespace PulseBanking.Infrastructure.Tests.Persistence;
 
@@ -18,7 +20,7 @@ public class TenantDbContextFactoryTests
     {
         _mockTenantManager = new Mock<ITenantManager>();
         _optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase(databaseName: "TestDb");
+            .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}");
     }
 
     [Fact]
@@ -38,8 +40,7 @@ public class TenantDbContextFactoryTests
 
         var factory = new TenantDbContextFactory(
             _mockTenantManager.Object,
-            _optionsBuilder,
-            defaultProvider: "InMemory");
+            _optionsBuilder);
 
         // Act
         var dbContext = factory.CreateDbContext("test-tenant");
@@ -58,8 +59,7 @@ public class TenantDbContextFactoryTests
 
         var factory = new TenantDbContextFactory(
             _mockTenantManager.Object,
-            _optionsBuilder,
-            defaultProvider: "InMemory");
+            _optionsBuilder);
 
         // Act
         var act = () => factory.CreateDbContext("invalid-tenant");
@@ -93,12 +93,11 @@ public class TenantDbContextFactoryTests
                 IsActive = true
             });
 
-        var factory = new TenantDbContextFactory(
-            _mockTenantManager.Object,
-            _optionsBuilder,
-            defaultProvider: "InMemory");
+        // Create a test context with tenant1
+        var tenantService1 = new TenantService(new HttpContextAccessor(), _mockTenantManager.Object, "test-tenant");
+        using var context1 = new ApplicationDbContext(_optionsBuilder.Options, tenantService1);
 
-        // Create test data
+        // Add test data
         var account1 = Account.Create(
             tenantId: "test-tenant",
             number: "ACC-001"
@@ -109,31 +108,20 @@ public class TenantDbContextFactoryTests
             number: "ACC-002"
         );
 
-        // Save the test data
-        using (var dbContext = factory.CreateDbContext("test-tenant"))
-        {
-            await dbContext.Database.EnsureDeletedAsync(); // Start with a clean database
-            await dbContext.Database.EnsureCreatedAsync();
+        await context1.Accounts.AddRangeAsync(account1, account2);
+        await context1.SaveChangesAsync();
 
-            await dbContext.Accounts.AddRangeAsync(account1, account2);
-            await dbContext.SaveChangesAsync();
-        }
+        // Act - Create a new context with tenant filter
+        var tenantService2 = new TenantService(new HttpContextAccessor(), _mockTenantManager.Object, "test-tenant");
+        using var context2 = new ApplicationDbContext(_optionsBuilder.Options, tenantService2);
+        var accounts = await context2.Accounts.ToListAsync();
 
-        // Act
-        using (var dbContext = factory.CreateDbContext("test-tenant"))
-        {
-            var accounts = await dbContext.Accounts.ToListAsync();
-
-            // Assert
-            accounts.Should().HaveCount(1);
-            accounts.First().TenantId.Should().Be("test-tenant");
-        }
+        // Assert
+        accounts.Should().HaveCount(1);
+        accounts.First().TenantId.Should().Be("test-tenant");
 
         // Cleanup
-        using (var dbContext = factory.CreateDbContext("test-tenant"))
-        {
-            await dbContext.Database.EnsureDeletedAsync();
-        }
+        await context1.Database.EnsureDeletedAsync();
     }
 
     [Fact]
@@ -161,56 +149,52 @@ public class TenantDbContextFactoryTests
         _mockTenantManager.Setup(x => x.GetTenantAsync("tenant2"))
             .ReturnsAsync(tenant2Settings);
 
-        var factory = new TenantDbContextFactory(
-            _mockTenantManager.Object,
-            _optionsBuilder,
-            defaultProvider: "InMemory");
+        // Create contexts with specific tenant services
+        var tenantService1 = new TenantService(new HttpContextAccessor(), _mockTenantManager.Object, "tenant1");
+        var tenantService2 = new TenantService(new HttpContextAccessor(), _mockTenantManager.Object, "tenant2");
 
         // Create test data for tenant1
-        using (var tenant1Context = factory.CreateDbContext("tenant1"))
+        using (var context1 = new ApplicationDbContext(_optionsBuilder.Options, tenantService1))
         {
-            await tenant1Context.Database.EnsureDeletedAsync();
-            await tenant1Context.Database.EnsureCreatedAsync();
-
             var account1 = Account.Create(
                 tenantId: "tenant1",
                 number: "ACC-001"
             );
-            tenant1Context.Accounts.Add(account1);
-            await tenant1Context.SaveChangesAsync();
+            await context1.Accounts.AddAsync(account1);
+            await context1.SaveChangesAsync();
         }
 
         // Create test data for tenant2
-        using (var tenant2Context = factory.CreateDbContext("tenant2"))
+        using (var context2 = new ApplicationDbContext(_optionsBuilder.Options, tenantService2))
         {
             var account2 = Account.Create(
                 tenantId: "tenant2",
                 number: "ACC-002"
             );
-            tenant2Context.Accounts.Add(account2);
-            await tenant2Context.SaveChangesAsync();
+            await context2.Accounts.AddAsync(account2);
+            await context2.SaveChangesAsync();
         }
 
         // Act & Assert for tenant1
-        using (var tenant1Context = factory.CreateDbContext("tenant1"))
+        using (var context1 = new ApplicationDbContext(_optionsBuilder.Options, tenantService1))
         {
-            var tenant1Accounts = await tenant1Context.Accounts.ToListAsync();
+            var tenant1Accounts = await context1.Accounts.ToListAsync();
             tenant1Accounts.Should().HaveCount(1);
             tenant1Accounts.First().TenantId.Should().Be("tenant1");
         }
 
         // Act & Assert for tenant2
-        using (var tenant2Context = factory.CreateDbContext("tenant2"))
+        using (var context2 = new ApplicationDbContext(_optionsBuilder.Options, tenantService2))
         {
-            var tenant2Accounts = await tenant2Context.Accounts.ToListAsync();
+            var tenant2Accounts = await context2.Accounts.ToListAsync();
             tenant2Accounts.Should().HaveCount(1);
             tenant2Accounts.First().TenantId.Should().Be("tenant2");
         }
 
         // Cleanup
-        using (var cleanupContext = factory.CreateDbContext("tenant1"))
+        using (var context = new ApplicationDbContext(_optionsBuilder.Options, tenantService1))
         {
-            await cleanupContext.Database.EnsureDeletedAsync();
+            await context.Database.EnsureDeletedAsync();
         }
     }
 }

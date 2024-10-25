@@ -2,17 +2,15 @@ using Microsoft.OpenApi.Models;
 using PulseBanking.Application;
 using PulseBanking.Infrastructure;
 using PulseBanking.Infrastructure.Middleware;
+using PulseBanking.Infrastructure.Persistence.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
-
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-// builder.Services.AddSwaggerGen();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Pulse Banking API", Version = "v1" });
@@ -42,7 +40,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -52,14 +49,17 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Add tenant middleware early in the pipeline, but after error handling/logging
+// Initialize database and seed data
+await app.InitializeDatabaseAsync();
+
+// Add tenant middleware early in the pipeline
 app.UseTenantMiddleware();
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
-
+// Weather forecast endpoint (you can remove this later)
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"

@@ -6,35 +6,27 @@ using PulseBanking.Infrastructure.Services;
 
 namespace PulseBanking.Infrastructure.Persistence;
 
+// Update src/PulseBanking.Infrastructure/Persistence/TenantDbContextFactory.cs
 public class TenantDbContextFactory : ITenantDbContextFactory<ApplicationDbContext>
 {
     private readonly ITenantManager _tenantManager;
     private readonly DbContextOptionsBuilder<ApplicationDbContext> _optionsBuilder;
-    private readonly string _defaultProvider;
 
     public TenantDbContextFactory(
         ITenantManager tenantManager,
-        DbContextOptionsBuilder<ApplicationDbContext> optionsBuilder,
-        string defaultProvider = "SqlServer")
+        DbContextOptionsBuilder<ApplicationDbContext> optionsBuilder)
     {
         _tenantManager = tenantManager;
         _optionsBuilder = optionsBuilder;
-        _defaultProvider = defaultProvider;
     }
 
     public ApplicationDbContext CreateDbContext(string tenantId)
     {
         var tenantSettings = _tenantManager.GetTenantAsync(tenantId).GetAwaiter().GetResult();
 
-        if (_defaultProvider == "SqlServer")
-        {
-            _optionsBuilder.UseSqlServer(tenantSettings.ConnectionString);
-        }
-
         var tenantService = new TenantService(
-            new HttpContextAccessor(),
-            _tenantManager,
-            fixedTenantId: tenantId);  // Pass the tenant ID directly
+            new HttpContextAccessor { HttpContext = new DefaultHttpContext() },
+            _tenantManager);
 
         return new ApplicationDbContext(_optionsBuilder.Options, tenantService);
     }
