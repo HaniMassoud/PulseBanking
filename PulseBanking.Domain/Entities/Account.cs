@@ -7,22 +7,30 @@ namespace PulseBanking.Domain.Entities;
 
 public class Account : BaseEntity
 {
-    public required string Number { get; init; }
+    public string Number { get; private init; } = string.Empty;  // Remove required, add default
     public decimal Balance { get; private set; }
     public AccountStatus Status { get; private set; }
 
+    // Protected constructor for testing
     protected Account() { }
+
+    private Account(string tenantId, string number, decimal initialBalance = 0, AccountStatus status = AccountStatus.Active)
+    {
+        TenantId = tenantId;
+        Number = number;
+        Balance = initialBalance;
+        Status = status;
+    }
 
     public static Account Create(string tenantId, string number, decimal initialBalance = 0, AccountStatus status = AccountStatus.Active)
     {
-        return new Account
-        {
-            Id = Guid.NewGuid(),
-            TenantId = tenantId,
-            Number = number,
-            Balance = initialBalance,
-            Status = status
-        };
+        if (string.IsNullOrWhiteSpace(tenantId))
+            throw new ArgumentException("TenantId cannot be empty", nameof(tenantId));
+
+        if (string.IsNullOrWhiteSpace(number))
+            throw new ArgumentException("Number cannot be empty", nameof(number));
+
+        return new Account(tenantId, number, initialBalance, status);
     }
 
     public void Deposit(decimal amount)

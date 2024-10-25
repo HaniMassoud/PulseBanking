@@ -3,6 +3,8 @@ namespace PulseBanking.Domain.Common;
 
 public abstract class BaseEntity
 {
-    public Guid Id { get; protected init; }  // Changed from private to protected
-    public required string TenantId { get; init; }
+    protected BaseEntity() { }
+
+    public Guid Id { get; protected init; } = Guid.NewGuid();
+    public string TenantId { get; protected init; } = string.Empty;  // Remove required, add default
 }
