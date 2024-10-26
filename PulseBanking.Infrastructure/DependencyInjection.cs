@@ -32,7 +32,12 @@ public static class DependencyInjection
         // Register services
         services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
         services.AddSingleton<ITenantManager, TenantManager>();  // Changed to Singleton
-        services.AddScoped<ITenantService, TenantService>();
+        services.AddScoped<ITenantService>(provider =>
+        {
+            var httpContextAccessor = provider.GetRequiredService<IHttpContextAccessor>();
+            var tenantManager = provider.GetRequiredService<ITenantManager>();
+            return new TenantService(httpContextAccessor, tenantManager);
+        });
 
         // Register the options builder
         services.AddSingleton(optionsBuilder);

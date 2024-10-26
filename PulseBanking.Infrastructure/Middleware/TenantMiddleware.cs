@@ -35,9 +35,9 @@ public class TenantMiddleware
             return;
         }
 
-        // Validate tenant exists and is active
         try
         {
+            // Get tenant settings to validate the tenant exists and is active
             var tenant = await _tenantManager.GetTenantAsync(tenantId!);
             if (!tenant.IsActive)
             {
