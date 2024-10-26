@@ -1,4 +1,4 @@
-﻿// Create new file: src/PulseBanking.Infrastructure/Persistence/Seed/DatabaseExtensions.cs
+﻿// Update src/PulseBanking.Infrastructure/Persistence/Seed/DatabaseExtensions.cs
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,11 +15,18 @@ public static class DatabaseExtensions
 
         try
         {
-            var context = services.GetRequiredService<IApplicationDbContext>() as ApplicationDbContext;
+            // Get the DbContext directly using DbContextFactory
+            var options = services.GetRequiredService<DbContextOptionsBuilder<ApplicationDbContext>>().Options;
             var tenantManager = services.GetRequiredService<ITenantManager>();
 
-            if (context == null)
-                throw new InvalidOperationException("ApplicationDbContext not found");
+            // Create a special tenant service for seeding that doesn't require tenant header
+            var tenantService = new Services.TenantService(
+                new Microsoft.AspNetCore.Http.HttpContextAccessor(),
+                tenantManager,
+                fixedTenantId: "system");  // Use a system tenant for migrations
+
+            // Create context with system tenant
+            using var context = new ApplicationDbContext(options, tenantService);
 
             // Apply migrations
             await context.Database.MigrateAsync();
@@ -28,7 +35,14 @@ public static class DatabaseExtensions
             var tenants = await tenantManager.GetAllTenantsAsync();
             foreach (var tenant in tenants)
             {
-                await DbSeeder.SeedDataAsync(context, tenant.TenantId);
+                // Create a new context for each tenant
+                var tenantSpecificService = new Services.TenantService(
+                    new Microsoft.AspNetCore.Http.HttpContextAccessor(),
+                    tenantManager,
+                    fixedTenantId: tenant.TenantId);
+
+                using var tenantContext = new ApplicationDbContext(options, tenantSpecificService);
+                await DbSeeder.SeedDataAsync(tenantContext, tenant.TenantId);
             }
         }
         catch (Exception ex)

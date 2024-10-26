@@ -49,13 +49,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Initialize database and seed data
+app.UseHttpsRedirection();
+
+// Initialize database before tenant middleware
 await app.InitializeDatabaseAsync();
 
-// Add tenant middleware early in the pipeline
+// Add tenant middleware after database initialization
 app.UseTenantMiddleware();
 
-app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 

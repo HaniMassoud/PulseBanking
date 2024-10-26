@@ -31,7 +31,7 @@ public static class DependencyInjection
 
         // Register services
         services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-        services.AddScoped<ITenantManager, TenantManager>();
+        services.AddSingleton<ITenantManager, TenantManager>();  // Changed to Singleton
         services.AddScoped<ITenantService, TenantService>();
 
         // Register the options builder

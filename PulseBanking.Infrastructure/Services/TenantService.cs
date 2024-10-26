@@ -19,7 +19,8 @@ public class TenantService : ITenantService
 
     public string GetCurrentTenant()
     {
-        if (_fixedTenantId != null)
+        // If we have a fixed tenant ID (for testing or seeding), use it
+        if (!string.IsNullOrEmpty(_fixedTenantId))
             return _fixedTenantId;
 
         var tenantId = _httpContextAccessor.HttpContext?.Request.Headers["X-TenantId"].FirstOrDefault();
