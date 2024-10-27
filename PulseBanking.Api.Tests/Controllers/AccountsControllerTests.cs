@@ -31,6 +31,7 @@ public class AccountsControllerTests
         var command = new CreateAccountCommand
         {
             Number = "ACC-001",
+            CustomerId = Guid.NewGuid(),  // Add this
             InitialBalance = 100m
         };
 

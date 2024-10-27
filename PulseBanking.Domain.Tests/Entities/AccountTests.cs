@@ -1,4 +1,4 @@
-﻿// tests/PulseBanking.Domain.Tests/Entities/AccountTests.cs
+﻿// Update tests/PulseBanking.Domain.Tests/Entities/AccountTests.cs
 using FluentAssertions;
 using PulseBanking.Domain.Entities;
 using PulseBanking.Domain.Enums;
@@ -9,21 +9,29 @@ namespace PulseBanking.Domain.Tests.Entities;
 public class AccountTests
 {
     private const string TEST_TENANT_ID = "test-tenant-001";
+    private static readonly Guid TEST_CUSTOMER_ID = Guid.NewGuid();
 
     [Fact]
     public void Create_WithValidData_ShouldCreateAccount()
     {
+        // Arrange
+        var customerId = Guid.NewGuid();
+        var number = "ACC-001";
+        var initialBalance = 100m;
+
         // Act
         var account = Account.Create(
-            TEST_TENANT_ID,
-            "ACC-001",
-            initialBalance: 100m);
+            tenantId: TEST_TENANT_ID,
+            number: number,
+            customerId: customerId,
+            initialBalance: initialBalance);
 
         // Assert
         account.Should().NotBeNull();
         account.TenantId.Should().Be(TEST_TENANT_ID);
-        account.Number.Should().Be("ACC-001");
-        account.Balance.Should().Be(100m);
+        account.Number.Should().Be(number);
+        account.CustomerId.Should().Be(customerId, "CustomerID should be set during creation");
+        account.Balance.Should().Be(initialBalance);
         account.Status.Should().Be(AccountStatus.Active);
     }
 
@@ -34,7 +42,7 @@ public class AccountTests
     public void Create_WithInvalidTenantId_ShouldThrowException(string invalidTenantId)
     {
         // Act
-        var action = () => Account.Create(invalidTenantId, "ACC-001");
+        var action = () => Account.Create(invalidTenantId, "ACC-001", TEST_CUSTOMER_ID);
 
         // Assert
         action.Should().Throw<ArgumentException>()
@@ -48,11 +56,22 @@ public class AccountTests
     public void Create_WithInvalidAccountNumber_ShouldThrowException(string invalidNumber)
     {
         // Act
-        var action = () => Account.Create(TEST_TENANT_ID, invalidNumber);
+        var action = () => Account.Create(TEST_TENANT_ID, invalidNumber, TEST_CUSTOMER_ID);
 
         // Assert
         action.Should().Throw<ArgumentException>()
             .WithMessage("Number cannot be empty*");
+    }
+
+    [Fact]
+    public void Create_WithEmptyCustomerId_ShouldThrowException()
+    {
+        // Act
+        var action = () => Account.Create(TEST_TENANT_ID, "ACC-001", Guid.Empty);
+
+        // Assert
+        action.Should().Throw<ArgumentException>()
+            .WithMessage("CustomerId cannot be empty*");
     }
 
     [Fact]
@@ -163,6 +182,7 @@ public class AccountTests
         return Account.Create(
             TEST_TENANT_ID,
             "TEST-001",
+            TEST_CUSTOMER_ID,
             initialBalance,
             AccountStatus.Active
         );
@@ -173,6 +193,7 @@ public class AccountTests
         return Account.Create(
             TEST_TENANT_ID,
             "TEST-002",
+            TEST_CUSTOMER_ID,
             0,
             AccountStatus.Inactive
         );

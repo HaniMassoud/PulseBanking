@@ -7,5 +7,6 @@ namespace PulseBanking.Application.Features.Accounts.Commands.CreateAccount;
 public record CreateAccountCommand : IRequest<AccountDto>
 {
     public required string Number { get; init; }
+    public required Guid CustomerId { get; init; }
     public decimal InitialBalance { get; init; }
 }

@@ -1,5 +1,7 @@
 ﻿// Create new file: src/PulseBanking.Application/Features/Accounts/Commands/CreateAccount/CreateAccountCommandHandler.cs
 using MediatR;
+using Microsoft.EntityFrameworkCore;
+using PulseBanking.Application.Common.Exceptions;
 using PulseBanking.Application.Features.Accounts.Common;
 using PulseBanking.Application.Interfaces;
 using PulseBanking.Domain.Entities;
@@ -23,9 +25,18 @@ public class CreateAccountCommandHandler : IRequestHandler<CreateAccountCommand,
     {
         var tenantId = _tenantService.GetCurrentTenant();
 
+        // Verify customer exists and belongs to the tenant
+        var customer = await _context.Customers
+            .FirstOrDefaultAsync(c => c.Id == request.CustomerId, cancellationToken)
+            ?? throw new NotFoundException("Customer not found");
+
+        if (customer.TenantId != tenantId)
+            throw new InvalidOperationException("Customer does not belong to the current tenant");
+
         var account = Account.Create(
             tenantId: tenantId,
             number: request.Number,
+            customerId: request.CustomerId,
             initialBalance: request.InitialBalance);
 
         _context.Accounts.Add(account);
@@ -35,6 +46,7 @@ public class CreateAccountCommandHandler : IRequestHandler<CreateAccountCommand,
         {
             Id = account.Id,
             Number = account.Number,
+            CustomerId = account.CustomerId,  // Add this to DTO
             Balance = account.Balance,
             Status = account.Status
         };

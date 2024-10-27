@@ -7,30 +7,43 @@ namespace PulseBanking.Domain.Entities;
 
 public class Account : BaseEntity
 {
-    public string Number { get; private init; } = string.Empty;  // Remove required, add default
+    public string Number { get; init; } = string.Empty;  // Remove required, add default
     public decimal Balance { get; private set; }
     public AccountStatus Status { get; private set; }
+    public Guid CustomerId { get; private init; }  // Nullable for migration
+    public Customer? Customer { get; private set; }
 
-    // Protected constructor for testing
-    protected Account() { }
+    protected Account() { }  // Required for EF Core
 
-    private Account(string tenantId, string number, decimal initialBalance = 0, AccountStatus status = AccountStatus.Active)
+    private Account(
+        string tenantId,
+        string number,
+        Guid customerId,
+        decimal initialBalance,
+        AccountStatus status)
     {
         TenantId = tenantId;
         Number = number;
+        CustomerId = customerId;
         Balance = initialBalance;
         Status = status;
     }
 
-    public static Account Create(string tenantId, string number, decimal initialBalance = 0, AccountStatus status = AccountStatus.Active)
+    public static Account Create(
+        string tenantId,
+        string number,
+        Guid customerId,
+        decimal initialBalance = 0,
+        AccountStatus status = AccountStatus.Active)
     {
         if (string.IsNullOrWhiteSpace(tenantId))
             throw new ArgumentException("TenantId cannot be empty", nameof(tenantId));
-
         if (string.IsNullOrWhiteSpace(number))
             throw new ArgumentException("Number cannot be empty", nameof(number));
+        if (customerId == Guid.Empty)
+            throw new ArgumentException("CustomerId cannot be empty", nameof(customerId));
 
-        return new Account(tenantId, number, initialBalance, status);
+        return new Account(tenantId, number, customerId, initialBalance, status);
     }
 
     public void Deposit(decimal amount)

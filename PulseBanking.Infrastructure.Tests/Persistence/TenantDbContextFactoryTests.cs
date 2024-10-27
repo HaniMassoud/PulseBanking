@@ -100,12 +100,14 @@ public class TenantDbContextFactoryTests
         // Add test data
         var account1 = Account.Create(
             tenantId: "test-tenant",
-            number: "ACC-001"
+            number: "ACC-001",
+            customerId: Guid.NewGuid()
         );
 
         var account2 = Account.Create(
             tenantId: "other-tenant",
-            number: "ACC-002"
+            number: "ACC-002",
+            customerId: Guid.NewGuid()
         );
 
         await context1.Accounts.AddRangeAsync(account1, account2);
@@ -158,7 +160,8 @@ public class TenantDbContextFactoryTests
         {
             var account1 = Account.Create(
                 tenantId: "tenant1",
-                number: "ACC-001"
+                number: "ACC-001",
+                customerId: Guid.NewGuid()
             );
             await context1.Accounts.AddAsync(account1);
             await context1.SaveChangesAsync();
@@ -169,7 +172,8 @@ public class TenantDbContextFactoryTests
         {
             var account2 = Account.Create(
                 tenantId: "tenant2",
-                number: "ACC-002"
+                number: "ACC-002",
+                customerId: Guid.NewGuid()
             );
             await context2.Accounts.AddAsync(account2);
             await context2.SaveChangesAsync();

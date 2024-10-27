@@ -6,6 +6,10 @@ A multi-tenant banking platform built with .NET 8, following Clean Architecture 
 
 Pulse Banking Platform is a scalable, multi-tenant banking system that allows multiple banks to operate on a single platform while maintaining strict data isolation.
 
+Pulse Banking Platform can be deployed separately for each region or country for data sovereignty and regulatory compliance.
+
+Pulse Banking Platform can also be deployed for a single Bank or Financial Institution that wants a dedicated, single-tenant platform.
+
 ## Architecture
 
 The solution follows Clean Architecture principles with the following structure:

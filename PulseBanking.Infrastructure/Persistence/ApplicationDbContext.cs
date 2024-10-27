@@ -29,6 +29,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     public DbSet<Account> Accounts => Set<Account>();
 
+    public DbSet<Customer> Customers => Set<Customer>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -37,6 +39,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
         modelBuilder.Entity<Account>().HasQueryFilter(
             a => _currentTenantId == null || a.TenantId == _currentTenantId);
+
+        modelBuilder.Entity<Customer>().HasQueryFilter(
+            c => _currentTenantId == null || c.TenantId == _currentTenantId);
+
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

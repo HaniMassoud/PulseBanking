@@ -7,5 +7,6 @@ namespace PulseBanking.Application.Interfaces;
 public interface IApplicationDbContext
 {
     DbSet<Account> Accounts { get; }
+    DbSet<Customer> Customers { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
