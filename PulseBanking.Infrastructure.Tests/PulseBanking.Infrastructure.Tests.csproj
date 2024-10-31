@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\PulseBanking.Application\PulseBanking.Application.csproj" />
     <ProjectReference Include="..\PulseBanking.Infrastructure\PulseBanking.Infrastructure.csproj" />
   </ItemGroup>
 

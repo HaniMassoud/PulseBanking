@@ -1,0 +1,46 @@
+﻿// Create new file: src/PulseBanking.WebApp/Components/Pages/RegistrationSuccess.razor
+@page "/registration-success"
+@inject NavigationManager Navigation
+
+<PageTitle>Registration Successful - Pulse Banking Platform</PageTitle>
+
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-8 text-center">
+            <div class="card">
+                <div class="card-body">
+                    <h1 class="card-title text-success mb-4">
+                        <i class="oi oi-check display-1"></i>
+                    </h1>
+                    <h2>Registration Successful!</h2>
+                    <p class="lead mt-3">
+                        Thank you for registering your bank with Pulse Banking Platform.
+                    </p>
+                    <p>
+                        We've sent a confirmation email with further instructions to the administrator's email address.
+                    </p>
+                    <div class="mt-4">
+                        <button class="btn btn-primary me-2" @onclick="NavigateToLogin">
+                            Go to Login
+                        </button>
+                        <button class="btn btn-outline-secondary" @onclick="NavigateToHome">
+                            Return to Home
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private void NavigateToLogin()
+    {
+        Navigation.NavigateTo("/Identity/Account/Login");
+    }
+
+    private void NavigateToHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+}

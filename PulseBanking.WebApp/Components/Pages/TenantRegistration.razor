@@ -1,0 +1,225 @@
+﻿@page "/register-tenant"
+@using PulseBanking.WebApp.Models
+@using PulseBanking.WebApp.Services
+@inject NavigationManager Navigation
+@inject ILogger<TenantRegistration> Logger
+@inject ITenantService TenantService
+@inject IJSRuntime JSRuntime
+
+@rendermode InteractiveServer
+
+<PageTitle>Register Your Bank - Pulse Banking Platform</PageTitle>
+
+<div class="container">
+    <h1>Register Your Bank</h1>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Error!</strong> @errorMessage
+            <button type="button" class="btn-close" @onclick="DismissError" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+
+    <!-- Add this debug section temporarily -->
+    <div class="alert alert-info mt-3">
+        <strong>Debug Info:</strong><br />
+        Bank Name: @registrationModel.BankName<br />
+        Time Zone: @registrationModel.TimeZone<br />
+        Currency: @registrationModel.CurrencyCode<br />
+        First Name: @registrationModel.AdminFirstName<br />
+        Last Name: @registrationModel.AdminLastName<br />
+        Email: @registrationModel.AdminEmail<br />
+    </div>
+
+    <EditForm Model="@registrationModel" OnValidSubmit="HandleValidSubmit" OnInvalidSubmit="HandleInvalidSubmit" FormName="tenant-registration">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <h3>Bank Details</h3>
+            <label for="bankName" class="form-label">Bank Name</label>
+            <InputText id="bankName" class="form-control" @bind-Value="registrationModel.BankName" />
+            <ValidationMessage For="@(() => registrationModel.BankName)" />
+        </div>
+
+        <div class="mb-3">
+            <label for="timeZone" class="form-label">Time Zone</label>
+            <InputSelect id="timeZone" class="form-control" @bind-Value="registrationModel.TimeZone">
+                @foreach (var timeZone in TimeZoneInfo.GetSystemTimeZones())
+                {
+                    <option value="@timeZone.Id">@timeZone.DisplayName</option>
+                }
+            </InputSelect>
+            <ValidationMessage For="@(() => registrationModel.TimeZone)" />
+        </div>
+
+        <div class="mb-3">
+            <label for="currencyCode" class="form-label">Currency</label>
+            <InputSelect id="currencyCode" class="form-control" @bind-Value="registrationModel.CurrencyCode">
+                <option value="USD">US Dollar (USD)</option>
+                <option value="EUR">Euro (EUR)</option>
+                <option value="GBP">British Pound (GBP)</option>
+                <option value="AUD">Australian Dollar (AUD)</option>
+            </InputSelect>
+            <ValidationMessage For="@(() => registrationModel.CurrencyCode)" />
+        </div>
+
+        <div class="mb-3">
+            <label for="defaultTransactionLimit" class="form-label">Default Transaction Limit</label>
+            <InputNumber id="defaultTransactionLimit" class="form-control" @bind-Value="registrationModel.DefaultTransactionLimit" />
+            <ValidationMessage For="@(() => registrationModel.DefaultTransactionLimit)" />
+        </div>
+
+        <h3 class="mt-4">Administrator Account</h3>
+
+        <div class="mb-3">
+            <label for="adminFirstName" class="form-label">First Name</label>
+            <InputText id="adminFirstName" class="form-control" @bind-Value="registrationModel.AdminFirstName" />
+            <ValidationMessage For="@(() => registrationModel.AdminFirstName)" />
+        </div>
+
+        <div class="mb-3">
+            <label for="adminLastName" class="form-label">Last Name</label>
+            <InputText id="adminLastName" class="form-control" @bind-Value="registrationModel.AdminLastName" />
+            <ValidationMessage For="@(() => registrationModel.AdminLastName)" />
+        </div>
+
+        <div class="mb-3">
+            <label for="adminEmail" class="form-label">Email</label>
+            <InputText id="adminEmail" class="form-control" @bind-Value="registrationModel.AdminEmail" />
+            <ValidationMessage For="@(() => registrationModel.AdminEmail)" />
+        </div>
+
+        <div class="mb-3">
+            <label for="adminPassword" class="form-label">Password</label>
+            <InputText id="adminPassword" type="password" class="form-control" @bind-Value="registrationModel.AdminPassword" />
+            <ValidationMessage For="@(() => registrationModel.AdminPassword)" />
+        </div>
+
+        <div class="mb-3">
+            <label for="adminPhoneNumber" class="form-label">Phone Number</label>
+            <InputText id="adminPhoneNumber" class="form-control" @bind-Value="registrationModel.AdminPhoneNumber" />
+            <ValidationMessage For="@(() => registrationModel.AdminPhoneNumber)" />
+        </div>
+
+        <button type="submit" class="btn btn-primary" disabled="@isLoading">
+            @if (isLoading)
+            {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span class="ms-1">Registering...</span>
+            }
+            else
+            {
+                <span>Register</span>
+            }
+        </button>
+    </EditForm>
+</div>
+
+@code {
+    private TenantRegistrationModel registrationModel = new()
+        {
+            TimeZone = TimeZoneInfo.Local.Id,  // Use local time zone as default
+            CurrencyCode = "USD",
+            DefaultTransactionLimit = 10000m,
+            BankName = string.Empty,
+            AdminFirstName = string.Empty,
+            AdminLastName = string.Empty,
+            AdminEmail = string.Empty,
+            AdminPassword = string.Empty,
+            AdminPhoneNumber = string.Empty
+        };
+
+    private string? errorMessage;
+    private bool isLoading;
+
+    protected override void OnInitialized()
+    {
+        Logger.LogInformation("===> TenantRegistration component initialized");
+        Logger.LogInformation("Initial model state: {@Model}", registrationModel);
+    }
+
+    private void DismissError()
+    {
+        errorMessage = null;
+    }
+
+    private void HandleInvalidSubmit(EditContext editContext)
+    {
+        Logger.LogInformation("===> HandleInvalidSubmit called");
+
+        // Log the validation messages
+        var messages = editContext.GetValidationMessages();
+        foreach (var message in messages)
+        {
+            Logger.LogInformation("Validation error: {message}", message);
+        }
+
+        // Log all form values
+        Logger.LogInformation("Bank Name: {BankName}", registrationModel.BankName);
+        Logger.LogInformation("Time Zone: {TimeZone}", registrationModel.TimeZone);
+        Logger.LogInformation("Currency Code: {CurrencyCode}", registrationModel.CurrencyCode);
+        Logger.LogInformation("Transaction Limit: {Limit}", registrationModel.DefaultTransactionLimit);
+        Logger.LogInformation("Admin First Name: {FirstName}", registrationModel.AdminFirstName);
+        Logger.LogInformation("Admin Last Name: {LastName}", registrationModel.AdminLastName);
+        Logger.LogInformation("Admin Email: {Email}", registrationModel.AdminEmail);
+        Logger.LogInformation("Admin Phone: {Phone}", registrationModel.AdminPhoneNumber);
+
+        errorMessage = "Please check the form for errors.";
+    }
+
+    private async Task HandleValidSubmit(EditContext editContext)
+    {
+        Logger.LogInformation("===> HandleValidSubmit called");
+        Logger.LogInformation("Model state: {@Model}", registrationModel);
+
+        try
+        {
+            isLoading = true;
+            errorMessage = null;
+
+            await TenantService.RegisterTenantAsync(registrationModel);
+            Logger.LogInformation("Tenant registration submitted for {BankName}", registrationModel.BankName);
+            Navigation.NavigateTo("/registration-success");
+        }
+        catch (HttpRequestException ex)
+        {
+            Logger.LogError(ex, "Error registering tenant");
+            errorMessage = "Unable to connect to the server. Please try again later.";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error registering tenant");
+            errorMessage = "An unexpected error occurred. Please try again later.";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+}
+
+<style>
+    .validation-message {
+        color: red;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .spinner-border {
+        width: 1rem;
+        height: 1rem;
+        border-width: 0.15em;
+    }
+</style>

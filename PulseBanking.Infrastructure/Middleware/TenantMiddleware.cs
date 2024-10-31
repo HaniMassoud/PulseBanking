@@ -1,7 +1,8 @@
-﻿// Update src/PulseBanking.Infrastructure/Middleware/TenantMiddleware.cs
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using PulseBanking.Application.Interfaces;
+using Microsoft.Extensions.Logging;
+using PulseBanking.Infrastructure.Attributes;
 
 namespace PulseBanking.Infrastructure.Middleware;
 
@@ -9,16 +10,31 @@ public class TenantMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ITenantManager _tenantManager;
+    private readonly ILogger<TenantMiddleware> _logger;
     private const string TENANT_HEADER = "X-TenantId";
 
-    public TenantMiddleware(RequestDelegate next, ITenantManager tenantManager)
+    public TenantMiddleware(
+        RequestDelegate next,
+        ITenantManager tenantManager,
+        ILogger<TenantMiddleware> logger)
     {
         _next = next;
         _tenantManager = tenantManager;
+        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)
     {
+        var endpoint = context.Request.Path;  // Use path instead of endpoint for now
+
+        // Skip tenant validation for registration endpoint
+        if (endpoint.Value?.EndsWith("/register", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            _logger.LogDebug("Skipping tenant validation for registration endpoint");
+            await _next(context);
+            return;
+        }
+
         if (!context.Request.Headers.TryGetValue(TENANT_HEADER, out var tenantId))
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -27,6 +43,7 @@ public class TenantMiddleware
             return;
         }
 
+        // Rest of your existing code...
         if (string.IsNullOrWhiteSpace(tenantId))
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;

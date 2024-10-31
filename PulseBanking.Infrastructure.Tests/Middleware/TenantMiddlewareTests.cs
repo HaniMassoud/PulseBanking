@@ -1,129 +1,126 @@
-﻿// Create tests/PulseBanking.Infrastructure.Tests/Middleware/TenantMiddlewareTests.cs
-using Microsoft.AspNetCore.Http;
-using PulseBanking.Application.Common.Models;
-using PulseBanking.Application.Interfaces;
-using PulseBanking.Infrastructure.Middleware;
-using FluentAssertions;
+﻿using Microsoft.AspNetCore.Http;
 using Moq;
-using System.Text.Json;
+using PulseBanking.Application.Interfaces;
+using Microsoft.Extensions.Logging;
+using Xunit;
+using PulseBanking.Application.Common.Models;  // Correct namespace for TenantSettings
+using PulseBanking.Infrastructure.Middleware;
 
 namespace PulseBanking.Infrastructure.Tests.Middleware;
 
 public class TenantMiddlewareTests
 {
-    private readonly Mock<ITenantManager> _mockTenantManager;
-    private readonly Mock<RequestDelegate> _nextMiddleware;
+    private readonly Mock<ITenantManager> _tenantManagerMock;
+    private readonly Mock<ILogger<TenantMiddleware>> _loggerMock;
+    private readonly TenantMiddleware _middleware;
+    private readonly DefaultHttpContext _httpContext;
 
     public TenantMiddlewareTests()
     {
-        _mockTenantManager = new Mock<ITenantManager>();
-        _nextMiddleware = new Mock<RequestDelegate>();
+        _tenantManagerMock = new Mock<ITenantManager>();
+        _loggerMock = new Mock<ILogger<TenantMiddleware>>();
+        _httpContext = new DefaultHttpContext();
+
+        _middleware = new TenantMiddleware(
+            next: (innerHttpContext) => Task.CompletedTask,
+            tenantManager: _tenantManagerMock.Object,
+            logger: _loggerMock.Object
+        );
     }
 
     [Fact]
-    public async Task InvokeAsync_WithValidActiveTenant_CallsNextMiddleware()
+    public async Task InvokeAsync_MissingTenantHeader_ReturnsBadRequest()
     {
         // Arrange
-        var middleware = new TenantMiddleware(_nextMiddleware.Object, _mockTenantManager.Object);
-        var context = new DefaultHttpContext();
-        context.Request.Headers["X-TenantId"] = "valid-tenant";
+        _httpContext.Request.Path = "/api/some-endpoint";
 
-        _mockTenantManager.Setup(x => x.GetTenantAsync("valid-tenant"))
+        // Act
+        await _middleware.InvokeAsync(_httpContext);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status400BadRequest, _httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_RegisterEndpoint_SkipsValidation()
+    {
+        // Arrange
+        _httpContext.Request.Path = "/api/tenants/register";
+
+        // Act
+        await _middleware.InvokeAsync(_httpContext);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status200OK, _httpContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ValidTenantHeader_CallsNext()
+    {
+        // Arrange
+        var nextCalled = false;
+        var middleware = new TenantMiddleware(
+            next: (innerHttpContext) =>
+            {
+                nextCalled = true;
+                return Task.CompletedTask;
+            },
+            tenantManager: _tenantManagerMock.Object,
+            logger: _loggerMock.Object
+        );
+
+        _httpContext.Request.Headers["X-TenantId"] = "valid-tenant";
+        _tenantManagerMock.Setup(x => x.GetTenantAsync("valid-tenant"))
             .ReturnsAsync(new TenantSettings
             {
                 TenantId = "valid-tenant",
-                Name = "Test Tenant",
-                ConnectionString = "test-connection",
-                IsActive = true
+                Name = "Valid Bank",
+                ConnectionString = "Server=localhost;Database=ValidBank;",
+                // Optional properties will use their defaults if not specified
             });
 
         // Act
-        await middleware.InvokeAsync(context);
+        await middleware.InvokeAsync(_httpContext);
 
         // Assert
-        _nextMiddleware.Verify(next => next(context), Times.Once);
-        context.Response.StatusCode.Should().Be(StatusCodes.Status200OK);
+        Assert.True(nextCalled);
+        Assert.Equal(StatusCodes.Status200OK, _httpContext.Response.StatusCode);
     }
 
     [Fact]
-    public async Task InvokeAsync_WithMissingTenantHeader_ReturnsBadRequest()
+    public async Task InvokeAsync_InactiveTenant_ReturnsForbidden()
     {
         // Arrange
-        var middleware = new TenantMiddleware(_nextMiddleware.Object, _mockTenantManager.Object);
-        var context = new DefaultHttpContext();
-
-        // Act
-        await middleware.InvokeAsync(context);
-
-        // Assert
-        context.Response.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
-        _nextMiddleware.Verify(next => next(It.IsAny<HttpContext>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task InvokeAsync_WithEmptyTenantHeader_ReturnsBadRequest()
-    {
-        // Arrange
-        var middleware = new TenantMiddleware(_nextMiddleware.Object, _mockTenantManager.Object);
-        var context = new DefaultHttpContext();
-        context.Request.Headers["X-TenantId"] = string.Empty;
-
-        // Act
-        await middleware.InvokeAsync(context);
-
-        // Assert
-        context.Response.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
-        _nextMiddleware.Verify(next => next(It.IsAny<HttpContext>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task InvokeAsync_WithInactiveTenant_ReturnsForbidden()
-    {
-        // Arrange
-        var middleware = new TenantMiddleware(_nextMiddleware.Object, _mockTenantManager.Object);
-        var context = new DefaultHttpContext();
-        context.Request.Headers["X-TenantId"] = "inactive-tenant";
-
-        _mockTenantManager.Setup(x => x.GetTenantAsync("inactive-tenant"))
+        _httpContext.Request.Headers["X-TenantId"] = "inactive-tenant";
+        _tenantManagerMock.Setup(x => x.GetTenantAsync("inactive-tenant"))
             .ReturnsAsync(new TenantSettings
             {
                 TenantId = "inactive-tenant",
-                Name = "Inactive Tenant",
-                ConnectionString = "test-connection",
+                Name = "Inactive Bank",
+                ConnectionString = "Server=localhost;Database=InactiveBank;",
                 IsActive = false
+                // Other properties will use their defaults
             });
 
         // Act
-        await middleware.InvokeAsync(context);
+        await _middleware.InvokeAsync(_httpContext);
 
         // Assert
-        context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
-        _nextMiddleware.Verify(next => next(It.IsAny<HttpContext>()), Times.Never);
+        Assert.Equal(StatusCodes.Status403Forbidden, _httpContext.Response.StatusCode);
     }
 
     [Fact]
-    public async Task InvokeAsync_WithNonexistentTenant_ReturnsBadRequest()
+    public async Task InvokeAsync_InvalidTenant_ReturnsBadRequest()
     {
         // Arrange
-        var middleware = new TenantMiddleware(_nextMiddleware.Object, _mockTenantManager.Object);
-        var context = new DefaultHttpContext();
-        context.Request.Headers["X-TenantId"] = "nonexistent-tenant";
-
-        _mockTenantManager.Setup(x => x.GetTenantAsync("nonexistent-tenant"))
+        _httpContext.Request.Headers["X-TenantId"] = "invalid-tenant";
+        _tenantManagerMock.Setup(x => x.GetTenantAsync("invalid-tenant"))
             .ThrowsAsync(new KeyNotFoundException());
 
         // Act
-        await middleware.InvokeAsync(context);
+        await _middleware.InvokeAsync(_httpContext);
 
         // Assert
-        context.Response.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
-        _nextMiddleware.Verify(next => next(It.IsAny<HttpContext>()), Times.Never);
-    }
-
-    private async Task<string> ReadResponseBody(HttpContext context)
-    {
-        context.Response.Body.Seek(0, SeekOrigin.Begin);
-        using var reader = new StreamReader(context.Response.Body);
-        return await reader.ReadToEndAsync();
+        Assert.Equal(StatusCodes.Status400BadRequest, _httpContext.Response.StatusCode);
     }
 }

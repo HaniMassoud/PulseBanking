@@ -40,6 +40,16 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowWebApp",
+        builder => builder
+            //.WithOrigins("https://localhost:7261") // Your WebApp URL
+            .WithOrigins("https://localhost:7199") // Your WebApp URL
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -56,6 +66,8 @@ await app.InitializeDatabaseAsync();
 
 // Add tenant middleware after database initialization
 app.UseTenantMiddleware();
+
+app.UseCors("AllowWebApp");
 
 app.UseAuthorization();
 app.MapControllers();

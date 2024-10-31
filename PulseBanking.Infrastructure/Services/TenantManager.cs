@@ -1,4 +1,4 @@
-﻿// Create new file: src/PulseBanking.Infrastructure/Services/TenantManager.cs
+﻿// Update src/PulseBanking.Infrastructure/Services/TenantManager.cs
 using Microsoft.Extensions.Configuration;
 using PulseBanking.Application.Common.Models;
 using PulseBanking.Application.Interfaces;
@@ -30,7 +30,7 @@ public class TenantManager : ITenantManager
                 CurrencyCode = tenantSection["CurrencyCode"] ?? "USD",
                 DefaultTransactionLimit = decimal.Parse(tenantSection["DefaultTransactionLimit"] ?? "10000"),
                 IsActive = bool.Parse(tenantSection["IsActive"] ?? "true"),
-                TimeZone = TimeZoneInfo.FindSystemTimeZoneById(tenantSection["TimeZone"] ?? "UTC")
+                TimeZone = tenantSection["TimeZone"] ?? "UTC"  // Changed to use string directly
             };
 
             _tenantSettings[settings.TenantId] = settings;
