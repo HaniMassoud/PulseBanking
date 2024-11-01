@@ -1,5 +1,6 @@
 ﻿// Update tests/PulseBanking.Infrastructure.Tests/Persistence/Seed/DbSeederTests.cs
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using PulseBanking.Application.Common.Models;
 using PulseBanking.Application.Interfaces;
 using PulseBanking.Infrastructure.Persistence;
@@ -13,12 +14,17 @@ public class DbSeederTests
 {
     private readonly Mock<ITenantManager> _mockTenantManager;
     private readonly DbContextOptionsBuilder<ApplicationDbContext> _optionsBuilder;
+    private readonly IServiceProvider _serviceProvider;
 
     public DbSeederTests()
     {
         _mockTenantManager = new Mock<ITenantManager>();
         _optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}");
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddSingleton(_mockTenantManager.Object);
+        _serviceProvider = serviceCollection.BuildServiceProvider();
     }
 
     [Fact]
@@ -32,14 +38,12 @@ public class DbSeederTests
             ConnectionString = "TestDb",
             IsActive = true
         };
-
         _mockTenantManager.Setup(x => x.GetTenantAsync("test-tenant"))
             .ReturnsAsync(testTenant);
-
         var factory = new TenantDbContextFactory(
             _mockTenantManager.Object,
-            _optionsBuilder);
-
+            _optionsBuilder,
+            _serviceProvider);
         using var context = factory.CreateDbContext("test-tenant");
 
         // Act
@@ -64,14 +68,12 @@ public class DbSeederTests
             ConnectionString = "TestDb",
             IsActive = true
         };
-
         _mockTenantManager.Setup(x => x.GetTenantAsync("test-tenant"))
             .ReturnsAsync(testTenant);
-
         var factory = new TenantDbContextFactory(
             _mockTenantManager.Object,
-            _optionsBuilder);
-
+            _optionsBuilder,
+            _serviceProvider);
         using var context = factory.CreateDbContext("test-tenant");
 
         // Act

@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 using PulseBanking.WebApp.Models;
 using System.Text.Json;
+using PulseBanking.Domain.Enums;  // Make sure to add reference to Domain project
 
 namespace PulseBanking.WebApp.Services;
 
@@ -22,13 +23,21 @@ public class TenantService : ITenantService
         {
             _logger.LogInformation("Attempting to register tenant: {@Model}", model);
 
-            // Create the command object that matches what the API expects
+            // Map registration model to command
             var command = new
             {
                 BankName = model.BankName,
                 TimeZone = model.TimeZone,
                 CurrencyCode = model.CurrencyCode,
                 DefaultTransactionLimit = model.DefaultTransactionLimit,
+
+                // Deployment Configuration
+                DeploymentType = model.DeploymentType,
+                Region = model.Region,
+                InstanceType = model.InstanceType,
+                DataSovereigntyCompliant = model.DataSovereigntyCompliant,
+
+                // Admin Information
                 AdminFirstName = model.AdminFirstName,
                 AdminLastName = model.AdminLastName,
                 AdminEmail = model.AdminEmail,

@@ -8,11 +8,11 @@ namespace PulseBanking.Infrastructure.Persistence.Seed;
 
 public static class DatabaseExtensions
 {
+    // Update src/PulseBanking.Infrastructure/Persistence/Seed/DatabaseExtensions.cs
     public static async Task InitializeDatabaseAsync(this IApplicationBuilder app)
     {
         using var scope = app.ApplicationServices.CreateScope();
         var services = scope.ServiceProvider;
-
         try
         {
             // Get the DbContext directly using DbContextFactory
@@ -31,6 +31,9 @@ public static class DatabaseExtensions
             // Apply migrations
             await context.Database.MigrateAsync();
 
+            // Seed default tenants
+            await DbSeeder.SeedDefaultTenantsAsync(context);
+
             // Get all tenants and seed data for each
             var tenants = await tenantManager.GetAllTenantsAsync();
             foreach (var tenant in tenants)
@@ -40,7 +43,6 @@ public static class DatabaseExtensions
                     new Microsoft.AspNetCore.Http.HttpContextAccessor(),
                     tenantManager,
                     fixedTenantId: tenant.TenantId);
-
                 using var tenantContext = new ApplicationDbContext(options, tenantSpecificService);
                 await DbSeeder.SeedDataAsync(tenantContext, tenant.TenantId);
             }

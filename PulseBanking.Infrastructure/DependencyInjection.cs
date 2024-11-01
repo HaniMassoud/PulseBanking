@@ -43,14 +43,20 @@ public static class DependencyInjection
         services.AddSingleton(optionsBuilder);
 
         // Register the factory
-        services.AddScoped<ITenantDbContextFactory<ApplicationDbContext>, TenantDbContextFactory>();
+        services.AddScoped<ITenantDbContextFactory<ApplicationDbContext>, TenantDbContextFactory>(provider =>
+        {
+            var tenantManager = provider.GetRequiredService<ITenantManager>();
+            var serviceProvider = provider.GetRequiredService<IServiceProvider>();
+            return new TenantDbContextFactory(tenantManager, optionsBuilder, serviceProvider);
+        });
 
         // Register DbContext using factory
         services.AddScoped<IApplicationDbContext>(provider =>
         {
             var factory = provider.GetRequiredService<ITenantDbContextFactory<ApplicationDbContext>>();
-            var tenantService = provider.GetRequiredService<ITenantService>();
-            return factory.CreateDbContext(tenantService.GetCurrentTenant());
+            var httpContext = provider.GetRequiredService<IHttpContextAccessor>().HttpContext;
+            var tenantId = httpContext?.Request.Headers["X-TenantId"].FirstOrDefault();
+            return factory.CreateDbContext(tenantId!);
         });
 
         return services;

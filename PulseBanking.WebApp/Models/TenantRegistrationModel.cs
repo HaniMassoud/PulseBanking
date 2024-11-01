@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using PulseBanking.Domain.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace PulseBanking.WebApp.Models;
 
@@ -27,6 +28,18 @@ public class TenantRegistrationModel
 
     [Range(0, 1000000, ErrorMessage = "Transaction limit must be between 0 and 1,000,000")]
     public decimal DefaultTransactionLimit { get; set; } = 10000m;
+
+    [Required(ErrorMessage = "Deployment type is required")]
+    public DeploymentType DeploymentType { get; set; } = DeploymentType.Shared;
+
+    [Required(ErrorMessage = "Region is required")]
+    public RegionCode Region { get; set; } = RegionCode.AUS;
+
+    [Required(ErrorMessage = "Instance type is required")]
+    public InstanceType InstanceType { get; set; } = InstanceType.Production;
+
+    [Required(ErrorMessage = "Data sovereignty compliance is required")]
+    public bool DataSovereigntyCompliant { get; set; } = true;
 
     [Required(ErrorMessage = "First name is required")]
     public string AdminFirstName

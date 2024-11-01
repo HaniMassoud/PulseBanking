@@ -14,4 +14,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.10" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\PulseBanking.Domain\PulseBanking.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

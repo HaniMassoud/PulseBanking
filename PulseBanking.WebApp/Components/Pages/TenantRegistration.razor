@@ -1,6 +1,7 @@
 ﻿@page "/register-tenant"
 @using PulseBanking.WebApp.Models
 @using PulseBanking.WebApp.Services
+@using PulseBanking.Domain.Enums
 @inject NavigationManager Navigation
 @inject ILogger<TenantRegistration> Logger
 @inject ITenantService TenantService
@@ -36,6 +37,10 @@
         Bank Name: @registrationModel.BankName<br />
         Time Zone: @registrationModel.TimeZone<br />
         Currency: @registrationModel.CurrencyCode<br />
+        Deployment Type: @registrationModel.DeploymentType<br />
+        Region: @registrationModel.Region<br />
+        Instance Type: @registrationModel.InstanceType<br />
+        Data Sovereignty Compliant: @registrationModel.DataSovereigntyCompliant<br />
         First Name: @registrationModel.AdminFirstName<br />
         Last Name: @registrationModel.AdminLastName<br />
         Email: @registrationModel.AdminEmail<br />
@@ -78,6 +83,46 @@
             <label for="defaultTransactionLimit" class="form-label">Default Transaction Limit</label>
             <InputNumber id="defaultTransactionLimit" class="form-control" @bind-Value="registrationModel.DefaultTransactionLimit" />
             <ValidationMessage For="@(() => registrationModel.DefaultTransactionLimit)" />
+        </div>
+
+        <div class="mb-3">
+            <h3>Deployment Configuration</h3>
+            <label for="deploymentType" class="form-label">Deployment Type</label>
+            <InputSelect id="deploymentType" class="form-control" @bind-Value="registrationModel.DeploymentType">
+                <option value="@DeploymentType.Shared">Shared Infrastructure</option>
+                <option value="@DeploymentType.Dedicated">Dedicated Infrastructure</option>
+            </InputSelect>
+            <ValidationMessage For="@(() => registrationModel.DeploymentType)" />
+        </div>
+
+        <div class="mb-3">
+            <label for="region" class="form-label">Region</label>
+            <InputSelect id="region" class="form-control" @bind-Value="registrationModel.Region">
+                <option value="@RegionCode.AUS">Australia</option>
+                <option value="@RegionCode.EUR">Europe</option>
+                <option value="@RegionCode.USA">United States</option>
+            </InputSelect>
+            <ValidationMessage For="@(() => registrationModel.Region)" />
+        </div>
+
+        <div class="mb-3">
+            <label for="instanceType" class="form-label">Instance Type</label>
+            <InputSelect id="instanceType" class="form-control" @bind-Value="registrationModel.InstanceType">
+                <option value="@InstanceType.Production">Production</option>
+                <option value="@InstanceType.Demo">Demo</option>
+                <option value="@InstanceType.Trial">Trial</option>
+            </InputSelect>
+            <ValidationMessage For="@(() => registrationModel.InstanceType)" />
+        </div>
+
+        <div class="mb-3">
+            <div class="form-check">
+                <InputCheckbox id="dataSovereigntyCompliant" class="form-check-input" @bind-Value="registrationModel.DataSovereigntyCompliant" />
+                <label class="form-check-label" for="dataSovereigntyCompliant">
+                    Comply with data sovereignty requirements
+                </label>
+            </div>
+            <ValidationMessage For="@(() => registrationModel.DataSovereigntyCompliant)" />
         </div>
 
         <h3 class="mt-4">Administrator Account</h3>

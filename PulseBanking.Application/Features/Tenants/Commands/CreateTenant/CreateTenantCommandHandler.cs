@@ -1,58 +1,82 @@
 ﻿// Update src/PulseBanking.Application/Features/Tenants/Commands/CreateTenant/CreateTenantCommandHandler.cs
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using PulseBanking.Application.Common.Models;
 using PulseBanking.Application.Features.Tenants.Common;
+using PulseBanking.Application.Interfaces;
+using PulseBanking.Domain.Entities;
+using PulseBanking.Domain.Enums;
 
 namespace PulseBanking.Application.Features.Tenants.Commands.CreateTenant;
 
 public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, TenantDto>
 {
-    private readonly IConfiguration _configuration;
+    private readonly IApplicationDbContext _context;
+    private readonly ILogger<CreateTenantCommandHandler> _logger;
 
-    public CreateTenantCommandHandler(IConfiguration configuration)
+    public CreateTenantCommandHandler(
+        IApplicationDbContext context,
+        ILogger<CreateTenantCommandHandler> logger)
     {
-        _configuration = configuration;
+        _context = context;
+        _logger = logger;
     }
 
     public async Task<TenantDto> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
     {
-        // Validate time zone
-        if (!TimeZoneInfo.GetSystemTimeZones().Any(tz => tz.Id == request.TimeZone))
+        try
         {
-            throw new ArgumentException("Invalid time zone", nameof(request.TimeZone));
+            _logger.LogInformation("Creating tenant: {@Request}", request);
+
+            var tenantId = request.BankName.ToLower().Replace(" ", "");
+
+            // Check if tenant already exists
+            var existingTenant = await _context.Tenants
+                .FirstOrDefaultAsync(t => t.Id == tenantId, cancellationToken);
+
+            if (existingTenant != null)
+            {
+                throw new InvalidOperationException($"Tenant with ID '{tenantId}' already exists");
+            }
+
+            var tenant = new Tenant
+            {
+                Id = tenantId,
+                Name = request.BankName,
+                DeploymentType = DeploymentType.Shared,
+                Region = RegionCode.AUS,
+                InstanceType = InstanceType.Production,
+                ConnectionString = $"Server=(local);Database=PulseBanking_{tenantId};Trusted_Connection=True;MultipleActiveResultSets=true;Trust Server Certificate=True;",
+                CurrencyCode = request.CurrencyCode,
+                DefaultTransactionLimit = request.DefaultTransactionLimit,
+                TimeZone = request.TimeZone,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = request.AdminEmail,
+                DataSovereigntyCompliant = true
+            };
+
+            _logger.LogInformation("Adding tenant to database: {@Tenant}", tenant);
+
+            await _context.Tenants.AddAsync(tenant, cancellationToken);
+            var saveResult = await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("SaveChanges result: {SaveResult}", saveResult);
+            _logger.LogInformation("Successfully created tenant: {TenantId}", tenant.Id);
+
+            return new TenantDto
+            {
+                TenantId = tenant.Id,
+                Name = tenant.Name,
+                IsActive = tenant.IsActive
+            };
         }
-
-        // Generate tenant ID
-        var tenantId = request.BankName.ToLower().Replace(" ", "-");
-
-        // Create tenant configuration
-        var tenantSettings = new TenantSettings
+        catch (Exception ex)
         {
-            TenantId = tenantId,
-            Name = request.BankName,
-            ConnectionString = _configuration.GetConnectionString("DefaultConnection") ?? "",
-            CurrencyCode = request.CurrencyCode,
-            DefaultTransactionLimit = request.DefaultTransactionLimit,
-            TimeZone = request.TimeZone,
-            IsActive = true
-        };
-
-        // Add tenant to configuration
-        // TODO: In a real application, this would be an async database operation
-        await Task.Run(() =>
-        {
-            var tenants = _configuration.GetSection("Tenants")
-                .Get<Dictionary<string, TenantSettings>>() ?? new();
-            tenants[tenantId] = tenantSettings;
-            // TODO: Save to database instead of configuration
-        }, cancellationToken);
-
-        return new TenantDto
-        {
-            TenantId = tenantId,
-            Name = request.BankName,
-            IsActive = true
-        };
+            _logger.LogError(ex, "Error creating tenant: {Message}", ex.Message);
+            throw;
+        }
     }
 }

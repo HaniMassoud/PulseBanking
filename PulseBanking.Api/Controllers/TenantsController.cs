@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using PulseBanking.Infrastructure.Attributes;
 using PulseBanking.Application.Features.Tenants.Commands.CreateTenant;
 using PulseBanking.Application.Features.Tenants.Common;
+using FluentValidation;
 
 namespace PulseBanking.Api.Controllers;
 
@@ -26,17 +27,22 @@ public class TenantsController : ControllerBase
     {
         _logger.LogInformation("Received tenant registration request at /register endpoint: {@Command}", command);
 
-        if (!ModelState.IsValid)
-        {
-            _logger.LogWarning("Invalid model state: {@ModelState}", ModelState);
-            return BadRequest(ModelState);
-        }
-
         try
         {
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid model state: {@ModelState}", ModelState);
+                return BadRequest(ModelState);
+            }
+
             var result = await _mediator.Send(command);
             _logger.LogInformation("Successfully registered tenant: {@Result}", result);
             return Ok(result);
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogError(ex, "Validation failed for tenant registration");
+            return BadRequest(new { errors = ex.Errors.Select(e => e.ErrorMessage) });
         }
         catch (Exception ex)
         {

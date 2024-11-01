@@ -1,5 +1,6 @@
 ﻿// Update tests/PulseBanking.Infrastructure.Tests/Persistence/TenantDbContextFactoryTests.cs
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using PulseBanking.Application.Common.Models;
 using PulseBanking.Application.Interfaces;
 using PulseBanking.Infrastructure.Persistence;
@@ -15,12 +16,17 @@ public class TenantDbContextFactoryTests
 {
     private readonly Mock<ITenantManager> _mockTenantManager;
     private readonly DbContextOptionsBuilder<ApplicationDbContext> _optionsBuilder;
+    private readonly IServiceProvider _serviceProvider;
 
     public TenantDbContextFactoryTests()
     {
         _mockTenantManager = new Mock<ITenantManager>();
         _optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}");
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddSingleton(_mockTenantManager.Object);
+        _serviceProvider = serviceCollection.BuildServiceProvider();
     }
 
     [Fact]
@@ -40,7 +46,8 @@ public class TenantDbContextFactoryTests
 
         var factory = new TenantDbContextFactory(
             _mockTenantManager.Object,
-            _optionsBuilder);
+            _optionsBuilder,
+            _serviceProvider);
 
         // Act
         var dbContext = factory.CreateDbContext("test-tenant");
@@ -59,7 +66,8 @@ public class TenantDbContextFactoryTests
 
         var factory = new TenantDbContextFactory(
             _mockTenantManager.Object,
-            _optionsBuilder);
+            _optionsBuilder,
+            _serviceProvider);
 
         // Act
         var act = () => factory.CreateDbContext("invalid-tenant");

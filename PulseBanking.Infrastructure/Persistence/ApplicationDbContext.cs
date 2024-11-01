@@ -28,21 +28,32 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     }
 
     public DbSet<Account> Accounts => Set<Account>();
-
     public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<Tenant> Tenants => Set<Tenant>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
+        // Apply all configurations from assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
+        // Configure audit fields defaults for all entities
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                modelBuilder.Entity(entityType.ClrType)
+                    .Property("CreatedAt")
+                    .HasDefaultValueSql("GETUTCDATE()");
+            }
+        }
+
+        // Multi-tenant query filters
         modelBuilder.Entity<Account>().HasQueryFilter(
             a => _currentTenantId == null || a.TenantId == _currentTenantId);
-
         modelBuilder.Entity<Customer>().HasQueryFilter(
             c => _currentTenantId == null || c.TenantId == _currentTenantId);
-
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -65,7 +76,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 }
             }
         }
-
         return await base.SaveChangesAsync(cancellationToken);
     }
 }
