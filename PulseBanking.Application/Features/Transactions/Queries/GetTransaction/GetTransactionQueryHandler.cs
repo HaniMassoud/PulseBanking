@@ -26,14 +26,16 @@ public class GetTransactionQueryHandler : IRequestHandler<GetTransactionQuery, B
 
     public async Task<BankTransaction> Handle(GetTransactionQuery request, CancellationToken cancellationToken)
     {
-        var tenantId = _tenantService.GetCurrentTenant();
+        var tenant = _tenantService.GetCurrentTenant();
+        if (tenant == null)
+            throw new UnauthorizedAccessException("No tenant context found");
 
         var transaction = await _context.Transactions
             .Include(t => t.Account)
             .FirstOrDefaultAsync(t => t.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException(nameof(BankTransaction), request.Id);
 
-        if (transaction.TenantId != tenantId)
+        if (transaction.TenantId != tenant.Id)
             throw new UnauthorizedAccessException("Transaction does not belong to the current tenant");
 
         return transaction;

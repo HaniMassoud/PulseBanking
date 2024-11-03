@@ -6,11 +6,13 @@ using PulseBanking.Infrastructure.Persistence;
 using PulseBanking.Infrastructure.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using PulseBanking.Application.Common.Interfaces;
 using PulseBanking.Infrastructure.Persistence.Repositories;
 using PulseBanking.Infrastructure.Persistence.UnitOfWork;
 using PulseBanking.Infrastructure.Services.Events;
+using PulseBanking.Infrastructure.Security;
+using Microsoft.AspNetCore.Antiforgery;
+
 
 namespace PulseBanking.Infrastructure;
 
@@ -49,6 +51,19 @@ public static class DependencyInjection
         })
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
+
+        // Configure antiforgery
+        services.AddAntiforgery(options =>
+        {
+            options.Cookie.Name = "XSRF-TOKEN";
+            options.HeaderName = "X-XSRF-TOKEN";
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SameSite = SameSiteMode.Strict;
+        });
+
+        // Configure tenant-aware antiforgery
+        services.Decorate<IAntiforgery, TenantAwareAntiforgeryService>();
 
         // Register services
         services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();

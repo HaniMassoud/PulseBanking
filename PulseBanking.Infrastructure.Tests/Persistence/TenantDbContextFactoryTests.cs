@@ -9,6 +9,7 @@ using Moq;
 using PulseBanking.Domain.Entities;
 using PulseBanking.Infrastructure.Services;
 using Microsoft.AspNetCore.Http;
+using PulseBanking.Domain.Enums;
 
 namespace PulseBanking.Infrastructure.Tests.Persistence;
 
@@ -33,14 +34,7 @@ public class TenantDbContextFactoryTests
     public void CreateDbContext_WithValidTenant_ReturnsConfiguredDbContext()
     {
         // Arrange
-        var testTenant = new TenantSettings
-        {
-            TenantId = "test-tenant",
-            Name = "Test Tenant",
-            ConnectionString = "TestDb",
-            IsActive = true
-        };
-
+        var testTenant = CreateTestTenantSettings("test-tenant");
         _mockTenantManager.Setup(x => x.GetTenantAsync("test-tenant"))
             .ReturnsAsync(testTenant);
 
@@ -83,10 +77,18 @@ public class TenantDbContextFactoryTests
         // Arrange
         var testTenant = new TenantSettings
         {
-            TenantId = "test-tenant",
+            Id = "test-tenant",
             Name = "Test Tenant",
+            DeploymentType = DeploymentType.Shared,
+            Region = RegionCode.AUS,
+            InstanceType = InstanceType.Production,
             ConnectionString = "TestDb",
-            IsActive = true
+            CreatedAt = DateTime.UtcNow,
+            DataSovereigntyCompliant = true,
+            IsActive = true,
+            TimeZone = "UTC",
+            CurrencyCode = "USD",
+            DefaultTransactionLimit = 10000m
         };
 
         _mockTenantManager.Setup(x => x.GetTenantAsync("test-tenant"))
@@ -95,10 +97,18 @@ public class TenantDbContextFactoryTests
         _mockTenantManager.Setup(x => x.GetTenantAsync("other-tenant"))
             .ReturnsAsync(new TenantSettings
             {
-                TenantId = "other-tenant",
+                Id = "other-tenant",
                 Name = "Other Tenant",
+                DeploymentType = DeploymentType.Shared,
+                Region = RegionCode.AUS,
+                InstanceType = InstanceType.Production,
                 ConnectionString = "TestDb",
-                IsActive = true
+                CreatedAt = DateTime.UtcNow,
+                DataSovereigntyCompliant = true,
+                IsActive = true,
+                TimeZone = "UTC",
+                CurrencyCode = "USD",
+                DefaultTransactionLimit = 10000m
             });
 
         // Create a test context with tenant1
@@ -138,21 +148,8 @@ public class TenantDbContextFactoryTests
     public async Task CreateDbContext_IsolatesDataBetweenTenants()
     {
         // Arrange
-        var tenant1Settings = new TenantSettings
-        {
-            TenantId = "tenant1",
-            Name = "Tenant One",
-            ConnectionString = "TestDb",
-            IsActive = true
-        };
-
-        var tenant2Settings = new TenantSettings
-        {
-            TenantId = "tenant2",
-            Name = "Tenant Two",
-            ConnectionString = "TestDb",
-            IsActive = true
-        };
+        var tenant1Settings = CreateTestTenantSettings("tenant1");
+        var tenant2Settings = CreateTestTenantSettings("tenant2");
 
         _mockTenantManager.Setup(x => x.GetTenantAsync("tenant1"))
             .ReturnsAsync(tenant1Settings);
@@ -208,5 +205,24 @@ public class TenantDbContextFactoryTests
         {
             await context.Database.EnsureDeletedAsync();
         }
+    }
+
+    private TenantSettings CreateTestTenantSettings(string id)
+    {
+        return new TenantSettings
+        {
+            Id = id, // Using Id instead of TenantId
+            Name = $"Test Tenant {id}",
+            DeploymentType = DeploymentType.Shared,
+            Region = RegionCode.AUS,
+            InstanceType = InstanceType.Production,
+            ConnectionString = $"Server=localhost;Database=Test_{id};",
+            CreatedAt = DateTime.UtcNow,
+            DataSovereigntyCompliant = true,
+            IsActive = true,
+            TimeZone = "UTC",
+            CurrencyCode = "USD",
+            DefaultTransactionLimit = 10000m
+        };
     }
 }

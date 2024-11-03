@@ -4,6 +4,8 @@ using PulseBanking.WebApp.Components;
 using PulseBanking.WebApp.Components.Account;
 using PulseBanking.WebApp.Identity;
 using PulseBanking.WebApp.Services;
+using PulseBanking.Infrastructure.Extensions;
+using PulseBanking.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,6 +61,16 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddSingleton<IEmailSender<IdentityUser>, IdentityNoOpEmailSender>();
 
+// Add Antiforgery services
+builder.Services.AddAntiforgery(options =>
+{
+    options.Cookie.Name = "XSRF-TOKEN";
+    options.HeaderName = "X-XSRF-TOKEN";
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -74,11 +86,16 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-app.UseAntiforgery();
-
 app.UseRouting();
+
+// Authentication & Authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<TenantAwareAntiforgeryMiddleware>();
+
+// Antiforgery middleware - now correctly placed after auth middleware
+// app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

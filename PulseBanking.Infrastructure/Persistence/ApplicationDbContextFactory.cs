@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using PulseBanking.Application.Interfaces;
+using PulseBanking.Domain.Entities;
+using PulseBanking.Domain.Enums;
 
 namespace PulseBanking.Infrastructure.Persistence;
 
@@ -29,8 +31,22 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
 // Add this class in the same file
 public class DesignTimeTenantService : ITenantService
 {
-    public string GetCurrentTenant()
+    public Tenant GetCurrentTenant()
     {
-        return "design-time-tenant";
+        return new Tenant
+        {
+            Id = "design-time-tenant",
+            Name = "Design Time Tenant",
+            DeploymentType = DeploymentType.Shared,
+            Region = RegionCode.AUS,
+            InstanceType = InstanceType.Production,
+            ConnectionString = "design-time-connection",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            DataSovereigntyCompliant = true,
+            TimeZone = "UTC",
+            CurrencyCode = "USD",
+            DefaultTransactionLimit = 10000m
+        };
     }
 }

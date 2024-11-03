@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Xunit;
 using PulseBanking.Application.Common.Models;  // Correct namespace for TenantSettings
 using PulseBanking.Infrastructure.Middleware;
+using PulseBanking.Domain.Enums;
 
 namespace PulseBanking.Infrastructure.Tests.Middleware;
 
@@ -70,14 +71,9 @@ public class TenantMiddlewareTests
         );
 
         _httpContext.Request.Headers["X-TenantId"] = "valid-tenant";
+        var testTenant = CreateTestTenantSettings("valid-tenant");
         _tenantManagerMock.Setup(x => x.GetTenantAsync("valid-tenant"))
-            .ReturnsAsync(new TenantSettings
-            {
-                TenantId = "valid-tenant",
-                Name = "Valid Bank",
-                ConnectionString = "Server=localhost;Database=ValidBank;",
-                // Optional properties will use their defaults if not specified
-            });
+            .ReturnsAsync(testTenant); 
 
         // Act
         await middleware.InvokeAsync(_httpContext);
@@ -92,15 +88,9 @@ public class TenantMiddlewareTests
     {
         // Arrange
         _httpContext.Request.Headers["X-TenantId"] = "inactive-tenant";
+        var testTenant = CreateTestTenantSettings("inactive-tenant", isActive: false); // Pass isActive as parameter
         _tenantManagerMock.Setup(x => x.GetTenantAsync("inactive-tenant"))
-            .ReturnsAsync(new TenantSettings
-            {
-                TenantId = "inactive-tenant",
-                Name = "Inactive Bank",
-                ConnectionString = "Server=localhost;Database=InactiveBank;",
-                IsActive = false
-                // Other properties will use their defaults
-            });
+            .ReturnsAsync(testTenant);
 
         // Act
         await _middleware.InvokeAsync(_httpContext);
@@ -122,5 +112,24 @@ public class TenantMiddlewareTests
 
         // Assert
         Assert.Equal(StatusCodes.Status400BadRequest, _httpContext.Response.StatusCode);
+    }
+
+    private TenantSettings CreateTestTenantSettings(string id, bool isActive = true)
+    {
+        return new TenantSettings
+        {
+            Id = id,
+            Name = $"Test Tenant {id}",
+            DeploymentType = DeploymentType.Shared,
+            Region = RegionCode.AUS,
+            InstanceType = InstanceType.Production,
+            ConnectionString = $"Server=localhost;Database=Test_{id};",
+            CreatedAt = DateTime.UtcNow,
+            DataSovereigntyCompliant = true,
+            IsActive = isActive, // Use the parameter here
+            TimeZone = "UTC",
+            CurrencyCode = "USD",
+            DefaultTransactionLimit = 10000m
+        };
     }
 }

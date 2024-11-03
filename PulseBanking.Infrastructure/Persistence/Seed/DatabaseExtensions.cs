@@ -31,9 +31,9 @@ public static class DatabaseExtensions
 
             // Seed data for each tenant
             var tenants = await tenantManager.GetAllTenantsAsync();
-            foreach (var tenant in tenants.Where(t => t.TenantId != "system"))
+            foreach (var tenant in tenants.Where(t => t.Id != "system"))
             {
-                await DbSeeder.SeedDataAsync(context, tenant.TenantId, userManager, roleManager, logger);
+                await DbSeeder.SeedDataAsync(context, tenant.Id, userManager, roleManager, logger);
             }
         }
         catch (Exception ex)

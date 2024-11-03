@@ -32,10 +32,11 @@ public class AuditService : IAuditService
     {
         try
         {
-            var tenantId = _tenantService.GetCurrentTenant();
+            var tenant = _tenantService.GetCurrentTenant()
+                ?? throw new InvalidOperationException("No tenant context found");
 
             var audit = AuditTrail.Create(
-                tenantId: tenantId,
+                tenantId: tenant.Id,
                 action: action,
                 entityName: entityName,
                 entityId: entityId,

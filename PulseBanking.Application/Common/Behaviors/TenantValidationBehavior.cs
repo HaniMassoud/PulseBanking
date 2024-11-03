@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using PulseBanking.Application.Interfaces;
+using PulseBanking.Domain.Entities;
 
 namespace PulseBanking.Application.Common.Behaviors;
 
@@ -23,26 +24,26 @@ public class TenantValidationBehavior<TRequest, TResponse> : IPipelineBehavior<T
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
-        var tenantId = _tenantService.GetCurrentTenant();
+        var tenant = _tenantService.GetCurrentTenant();
 
-        if (string.IsNullOrEmpty(tenantId))
+        if (tenant == null || string.IsNullOrEmpty(tenant.Id))
         {
-            _logger.LogWarning("No tenant ID found in the current context");
-            throw new UnauthorizedAccessException("No tenant ID found in the current context");
+            _logger.LogWarning("No tenant found in the current context");
+            throw new UnauthorizedAccessException("No tenant found in the current context");
         }
 
-        var tenantExists = await _tenantManager.TenantExistsAsync(tenantId);
+        var tenantExists = await _tenantManager.TenantExistsAsync(tenant.Id);
         if (!tenantExists)
         {
-            _logger.LogWarning("Invalid tenant ID: {TenantId}", tenantId);
-            throw new UnauthorizedAccessException($"Invalid tenant ID: {tenantId}");
+            _logger.LogWarning("Invalid tenant ID: {TenantId}", tenant.Id);
+            throw new UnauthorizedAccessException($"Invalid tenant ID: {tenant.Id}");
         }
 
-        var tenant = await _tenantManager.GetTenantAsync(tenantId);
-        if (!tenant.IsActive)
+        var tenantDetails = await _tenantManager.GetTenantAsync(tenant.Id);
+        if (!tenantDetails.IsActive)
         {
-            _logger.LogWarning("Tenant {TenantId} is inactive", tenantId);
-            throw new UnauthorizedAccessException($"Tenant {tenantId} is inactive");
+            _logger.LogWarning("Tenant {TenantId} is inactive", tenant.Id);
+            throw new UnauthorizedAccessException($"Tenant {tenant.Id} is inactive");
         }
 
         return await next();

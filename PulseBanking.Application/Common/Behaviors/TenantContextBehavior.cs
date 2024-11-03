@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using PulseBanking.Application.Interfaces;
 using System.Globalization;
+using PulseBanking.Domain.Entities;
 
 namespace PulseBanking.Application.Common.Behaviors;
 
@@ -24,32 +25,32 @@ public class TenantContextBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
-        var tenantId = _tenantService.GetCurrentTenant();
+        var tenant = _tenantService.GetCurrentTenant();
 
-        if (!string.IsNullOrEmpty(tenantId))
+        if (tenant != null && !string.IsNullOrEmpty(tenant.Id))
         {
-            var tenant = await _tenantManager.GetTenantAsync(tenantId);
+            var tenantDetails = await _tenantManager.GetTenantAsync(tenant.Id);
 
             // Set thread's current culture based on tenant settings if needed
-            if (!string.IsNullOrEmpty(tenant.TimeZone))
+            if (!string.IsNullOrEmpty(tenantDetails.TimeZone))
             {
                 try
                 {
-                    var timeZone = TimeZoneInfo.FindSystemTimeZoneById(tenant.TimeZone);
+                    var timeZone = TimeZoneInfo.FindSystemTimeZoneById(tenantDetails.TimeZone);
                     // Note: We can't set the system time zone, but we can use it for date/time conversions
                     // Store it in the ambient context if needed
-                    Thread.CurrentThread.CurrentCulture = new CultureInfo(tenant.TimeZone);
+                    Thread.CurrentThread.CurrentCulture = new CultureInfo(tenantDetails.TimeZone);
                 }
                 catch (TimeZoneNotFoundException ex)
                 {
                     _logger.LogWarning(ex, "Invalid timezone {TimeZone} specified for tenant {TenantId}",
-                        tenant.TimeZone, tenantId);
+                        tenantDetails.TimeZone, tenant.Id);
                 }
             }
 
             _logger.LogInformation(
                 "Request processing for Tenant: {TenantId}, Type: {RequestType}",
-                tenantId,
+                tenant.Id,
                 typeof(TRequest).Name);
         }
 

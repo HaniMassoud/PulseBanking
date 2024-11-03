@@ -1,6 +1,6 @@
-﻿// Create new file: src/PulseBanking.Infrastructure/Services/TenantService.cs (if it doesn't exist already)
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using PulseBanking.Application.Interfaces;
+using PulseBanking.Domain.Entities;
 
 namespace PulseBanking.Infrastructure.Services;
 
@@ -9,7 +9,7 @@ public class TenantService : ITenantService
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ITenantManager _tenantManager;
     private readonly string? _fixedTenantId;
-    private string? _currentTenantId;  // Add this field
+    private Tenant? _currentTenant;
 
     public TenantService(
         IHttpContextAccessor httpContextAccessor,
@@ -19,21 +19,48 @@ public class TenantService : ITenantService
         _httpContextAccessor = httpContextAccessor;
         _tenantManager = tenantManager;
         _fixedTenantId = fixedTenantId;
-
-        // Capture the tenant ID immediately if available
-        if (_fixedTenantId == null && httpContextAccessor.HttpContext != null)
-        {
-            _currentTenantId = httpContextAccessor.HttpContext.Request.Headers["X-TenantId"].FirstOrDefault();
-        }
     }
 
-    public string GetCurrentTenant()
+    public Tenant GetCurrentTenant()
+    {
+        if (_currentTenant != null)
+            return _currentTenant;
+
+        var tenantId = GetTenantId();
+        var settings = _tenantManager.GetTenantAsync(tenantId).Result;
+
+        if (settings == null)
+            throw new UnauthorizedAccessException("Invalid tenant");
+
+        _currentTenant = new Tenant
+        {
+            Id = settings.Id,
+            Name = settings.Name,
+            DeploymentType = settings.DeploymentType,
+            Region = settings.Region,
+            InstanceType = settings.InstanceType,
+            ConnectionString = settings.ConnectionString,
+            DedicatedHostName = settings.DedicatedHostName,
+            CurrencyCode = settings.CurrencyCode,
+            DefaultTransactionLimit = settings.DefaultTransactionLimit,
+            TimeZone = settings.TimeZone,
+            IsActive = settings.IsActive,
+            CreatedAt = settings.CreatedAt,
+            CreatedBy = settings.CreatedBy,
+            LastModifiedAt = settings.LastModifiedAt,
+            LastModifiedBy = settings.LastModifiedBy,
+            TrialEndsAt = settings.TrialEndsAt,
+            DataSovereigntyCompliant = settings.DataSovereigntyCompliant,
+            RegulatoryNotes = settings.RegulatoryNotes
+        };
+
+        return _currentTenant;
+    }
+
+    private string GetTenantId()
     {
         if (!string.IsNullOrEmpty(_fixedTenantId))
             return _fixedTenantId;
-
-        if (!string.IsNullOrEmpty(_currentTenantId))
-            return _currentTenantId;
 
         var tenantId = _httpContextAccessor.HttpContext?.Request.Headers["X-TenantId"].FirstOrDefault();
 
@@ -42,7 +69,6 @@ public class TenantService : ITenantService
             throw new UnauthorizedAccessException("TenantId not specified");
         }
 
-        _currentTenantId = tenantId;  // Store for future use
         return tenantId;
     }
 }

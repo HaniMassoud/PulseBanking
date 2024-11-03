@@ -30,38 +30,52 @@ public class ApiRoleStore : IRoleStore<IdentityRole>
         return await HandleResponseAsync(response);
     }
 
-    public async Task<IdentityRole> FindByIdAsync(string roleId, CancellationToken cancellationToken)
+    public async Task<IdentityRole?> FindByIdAsync(string roleId, CancellationToken cancellationToken)
     {
-        return await _httpClient.GetFromJsonAsync<IdentityRole>($"api/roles/{roleId}", cancellationToken);
+        try
+        {
+            return await _httpClient.GetFromJsonAsync<IdentityRole>($"api/roles/{roleId}", cancellationToken);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
     }
 
-    public async Task<IdentityRole> FindByNameAsync(string normalizedRoleName, CancellationToken cancellationToken)
+    public async Task<IdentityRole?> FindByNameAsync(string normalizedRoleName, CancellationToken cancellationToken)
     {
-        return await _httpClient.GetFromJsonAsync<IdentityRole>($"api/roles/name/{normalizedRoleName}", cancellationToken);
+        try
+        {
+            return await _httpClient.GetFromJsonAsync<IdentityRole>($"api/roles/name/{normalizedRoleName}", cancellationToken);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
     }
 
-    public Task<string> GetNormalizedRoleNameAsync(IdentityRole role, CancellationToken cancellationToken)
+    public Task<string?> GetNormalizedRoleNameAsync(IdentityRole role, CancellationToken cancellationToken)
     {
         return Task.FromResult(role.NormalizedName);
     }
 
     public Task<string> GetRoleIdAsync(IdentityRole role, CancellationToken cancellationToken)
     {
-        return Task.FromResult(role.Id);
+        return Task.FromResult(role.Id ?? string.Empty);
     }
 
-    public Task<string> GetRoleNameAsync(IdentityRole role, CancellationToken cancellationToken)
+    public Task<string?> GetRoleNameAsync(IdentityRole role, CancellationToken cancellationToken)
     {
         return Task.FromResult(role.Name);
     }
 
-    public Task SetNormalizedRoleNameAsync(IdentityRole role, string normalizedName, CancellationToken cancellationToken)
+    public Task SetNormalizedRoleNameAsync(IdentityRole role, string? normalizedName, CancellationToken cancellationToken)
     {
         role.NormalizedName = normalizedName;
         return Task.CompletedTask;
     }
 
-    public Task SetRoleNameAsync(IdentityRole role, string roleName, CancellationToken cancellationToken)
+    public Task SetRoleNameAsync(IdentityRole role, string? roleName, CancellationToken cancellationToken)
     {
         role.Name = roleName;
         return Task.CompletedTask;
@@ -80,18 +94,19 @@ public class ApiRoleStore : IRoleStore<IdentityRole>
         }
 
         var errorResponse = await response.Content.ReadFromJsonAsync<IdentityErrorResponse>();
-        var errors = errorResponse?.Errors.Select(e => new IdentityError { Code = e.Code, Description = e.Description });
+        var errors = errorResponse?.Errors?.Select(e => new IdentityError { Code = e.Code, Description = e.Description })
+            ?? Array.Empty<IdentityError>();
         return IdentityResult.Failed(errors.ToArray());
     }
 
     private class IdentityErrorResponse
     {
-        public IEnumerable<IdentityErrorItem> Errors { get; set; }
+        public required IEnumerable<IdentityErrorItem> Errors { get; set; }
     }
 
     private class IdentityErrorItem
     {
-        public string Code { get; set; }
-        public string Description { get; set; }
+        public required string Code { get; set; }
+        public required string Description { get; set; }
     }
 }

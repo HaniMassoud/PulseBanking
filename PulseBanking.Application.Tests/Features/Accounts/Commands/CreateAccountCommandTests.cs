@@ -34,9 +34,9 @@ public class CreateAccountCommandTests
     public async Task Handle_ValidCommand_CreatesAccount()
     {
         // Arrange
-        const string tenantId = "test-tenant";
+        var testTenant = CreateTestTenant();
         var customer = Customer.Create(
-            tenantId,
+            testTenant.Id,
             "John",
             "Doe",
             "john.doe@example.com",
@@ -56,7 +56,7 @@ public class CreateAccountCommandTests
         _contextMock.Setup(x => x.Customers).Returns(customersMock.Object);
 
         _contextMock.Setup(x => x.Accounts).Returns(_accountsDbSetMock.Object);
-        _tenantServiceMock.Setup(x => x.GetCurrentTenant()).Returns(tenantId);
+        _tenantServiceMock.Setup(x => x.GetCurrentTenant()).Returns(testTenant);
 
         Account? savedAccount = null;
         _accountsDbSetMock.Setup(d => d.Add(It.IsAny<Account>()))
@@ -76,7 +76,7 @@ public class CreateAccountCommandTests
         savedAccount!.Number.Should().Be(command.Number);
         savedAccount.CustomerId.Should().Be(customer.Id);  // Verify against customer.Id
         savedAccount.Balance.Should().Be(command.InitialBalance);
-        savedAccount.TenantId.Should().Be(tenantId);
+        savedAccount.TenantId.Should().Be(testTenant.Id);
 
         _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -85,7 +85,7 @@ public class CreateAccountCommandTests
     public async Task Handle_WithNonExistentCustomer_ShouldThrowNotFoundException()
     {
         // Arrange
-        const string tenantId = "test-tenant";
+        var testTenant = CreateTestTenant();
         var customerId = Guid.NewGuid();
 
         var command = new CreateAccountCommand
@@ -99,7 +99,7 @@ public class CreateAccountCommandTests
         var customersMock = customers.AsQueryable().BuildMockDbSet();
         _contextMock.Setup(x => x.Customers).Returns(customersMock.Object);
 
-        _tenantServiceMock.Setup(x => x.GetCurrentTenant()).Returns(tenantId);
+        _tenantServiceMock.Setup(x => x.GetCurrentTenant()).Returns(testTenant);
 
         // Act
         var action = () => _handler.Handle(command, CancellationToken.None);
@@ -107,4 +107,24 @@ public class CreateAccountCommandTests
         // Assert
         await action.Should().ThrowAsync<NotFoundException>();
     }
+
+    private Tenant CreateTestTenant(string id = "test-tenant")
+    {
+        return new Tenant
+        {
+            Id = id,
+            Name = "Test Tenant",
+            DeploymentType = DeploymentType.Shared,
+            Region = RegionCode.AUS,
+            InstanceType = InstanceType.Production,
+            ConnectionString = "test-connection",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            DataSovereigntyCompliant = true,
+            TimeZone = "UTC",
+            CurrencyCode = "USD",
+            DefaultTransactionLimit = 10000m
+        };
+    }
+
 }

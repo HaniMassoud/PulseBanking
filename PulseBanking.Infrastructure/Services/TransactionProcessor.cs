@@ -32,12 +32,13 @@ public class TransactionProcessor : ITransactionProcessor
     }
 
     public async Task ProcessTransactionAsync(
-        BankTransaction transaction,
-        CancellationToken cancellationToken = default)
+    BankTransaction transaction,
+    CancellationToken cancellationToken = default)
     {
-        var tenantId = _tenantService.GetCurrentTenant();
+        var tenant = _tenantService.GetCurrentTenant()
+            ?? throw new UnauthorizedAccessException("No tenant context found");
 
-        if (transaction.TenantId != tenantId)
+        if (transaction.TenantId != tenant.Id)
             throw new UnauthorizedAccessException("Transaction does not belong to the current tenant");
 
         try

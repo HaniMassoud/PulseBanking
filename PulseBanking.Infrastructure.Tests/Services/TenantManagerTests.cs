@@ -4,6 +4,7 @@ using PulseBanking.Application.Common.Models;
 using PulseBanking.Infrastructure.Services;
 using FluentAssertions;
 using Moq;
+using PulseBanking.Domain.Enums;
 
 namespace PulseBanking.Infrastructure.Tests.Services;
 
@@ -18,19 +19,29 @@ public class TenantManagerTests
         {
             {"Tenants:tenant1:Id", "tenant1"},
             {"Tenants:tenant1:Name", "Test Bank 1"},
+            {"Tenants:tenant1:DeploymentType", "Shared"},
+            {"Tenants:tenant1:Region", "AUS"},
+            {"Tenants:tenant1:InstanceType", "Production"},
             {"Tenants:tenant1:ConnectionString", "TestConnection1"},
             {"Tenants:tenant1:CurrencyCode", "USD"},
             {"Tenants:tenant1:DefaultTransactionLimit", "10000"},
             {"Tenants:tenant1:TimeZone", "UTC"},
             {"Tenants:tenant1:IsActive", "true"},
+            {"Tenants:tenant1:CreatedAt", DateTime.UtcNow.ToString("O")},
+            {"Tenants:tenant1:DataSovereigntyCompliant", "true"},
 
             {"Tenants:tenant2:Id", "tenant2"},
             {"Tenants:tenant2:Name", "Test Bank 2"},
+            {"Tenants:tenant2:DeploymentType", "Shared"},
+            {"Tenants:tenant2:Region", "AUS"},
+            {"Tenants:tenant2:InstanceType", "Production"},
             {"Tenants:tenant2:ConnectionString", "TestConnection2"},
             {"Tenants:tenant2:CurrencyCode", "EUR"},
             {"Tenants:tenant2:DefaultTransactionLimit", "15000"},
             {"Tenants:tenant2:TimeZone", "UTC"},
             {"Tenants:tenant2:IsActive", "false"},
+            {"Tenants:tenant2:CreatedAt", DateTime.UtcNow.ToString("O")},
+            {"Tenants:tenant2:DataSovereigntyCompliant", "true"}
         };
 
         _configuration = new ConfigurationBuilder()
@@ -49,7 +60,7 @@ public class TenantManagerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.TenantId.Should().Be("tenant1");
+        result.Id.Should().Be("tenant1");
         result.Name.Should().Be("Test Bank 1");
         result.ConnectionString.Should().Be("TestConnection1");
         result.CurrencyCode.Should().Be("USD");
@@ -81,8 +92,8 @@ public class TenantManagerTests
 
         // Assert
         result.Should().HaveCount(2);
-        result.Should().Contain(t => t.TenantId == "tenant1");
-        result.Should().Contain(t => t.TenantId == "tenant2");
+        result.Should().Contain(t => t.Id == "tenant1");
+        result.Should().Contain(t => t.Id == "tenant2");
     }
 
     [Fact]
@@ -109,5 +120,24 @@ public class TenantManagerTests
 
         // Assert
         result.Should().BeFalse();
+    }
+
+    private TenantSettings CreateTestTenantSettings(string id)
+    {
+        return new TenantSettings
+        {
+            Id = id, // Using Id instead of TenantId
+            Name = $"Test Tenant {id}",
+            DeploymentType = DeploymentType.Shared,
+            Region = RegionCode.AUS,
+            InstanceType = InstanceType.Production,
+            ConnectionString = $"Server=localhost;Database=Test_{id};",
+            CreatedAt = DateTime.UtcNow,
+            DataSovereigntyCompliant = true,
+            IsActive = true,
+            TimeZone = "UTC",
+            CurrencyCode = "USD",
+            DefaultTransactionLimit = 10000m
+        };
     }
 }

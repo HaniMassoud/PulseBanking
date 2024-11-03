@@ -1,7 +1,9 @@
-﻿// Create new file: src/PulseBanking.Application/Interfaces/ITenantService.cs
+﻿// src/PulseBanking.Application/Interfaces/ITenantService.cs
+using PulseBanking.Domain.Entities;
+
 namespace PulseBanking.Application.Interfaces;
 
 public interface ITenantService
 {
-    string GetCurrentTenant();
+    Tenant? GetCurrentTenant();
 }

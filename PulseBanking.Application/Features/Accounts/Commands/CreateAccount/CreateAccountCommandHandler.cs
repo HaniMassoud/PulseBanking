@@ -23,18 +23,20 @@ public class CreateAccountCommandHandler : IRequestHandler<CreateAccountCommand,
 
     public async Task<AccountDto> Handle(CreateAccountCommand request, CancellationToken cancellationToken)
     {
-        var tenantId = _tenantService.GetCurrentTenant();
+        var tenant = _tenantService.GetCurrentTenant();
+        if (tenant == null)
+            throw new UnauthorizedAccessException("No tenant context found");
 
         // Verify customer exists and belongs to the tenant
         var customer = await _context.Customers
             .FirstOrDefaultAsync(c => c.Id == request.CustomerId, cancellationToken)
             ?? throw new NotFoundException("Customer not found");
 
-        if (customer.TenantId != tenantId)
+        if (customer.TenantId != tenant.Id)
             throw new InvalidOperationException("Customer does not belong to the current tenant");
 
         var account = Account.Create(
-            tenantId: tenantId,
+            tenantId: tenant.Id,
             number: request.Number,
             customerId: request.CustomerId,
             initialBalance: request.InitialBalance);

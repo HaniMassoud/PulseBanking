@@ -30,15 +30,18 @@ public class CreateTransactionCommandHandler : IRequestHandler<CreateTransaction
 
     public async Task<BankTransaction> Handle(CreateTransactionCommand request, CancellationToken cancellationToken)
     {
-        var tenantId = _tenantService.GetCurrentTenant();
+        var tenant = _tenantService.GetCurrentTenant();
+        if (tenant == null)
+            throw new UnauthorizedAccessException("No tenant context found");
 
         // Verify account exists and belongs to tenant
         var account = await _context.Accounts
             .FirstOrDefaultAsync(a => a.Id == request.AccountId, cancellationToken)
             ?? throw new NotFoundException(nameof(Account), request.AccountId);
 
-        if (account.TenantId != tenantId)
+        if (account.TenantId != tenant.Id)
             throw new UnauthorizedAccessException("Account does not belong to the current tenant");
+
 
         // Create Money value object
         var amount = Money.FromDecimal(request.Amount, request.Currency);
@@ -51,7 +54,7 @@ public class CreateTransactionCommandHandler : IRequestHandler<CreateTransaction
 
         // Create transaction
         var transaction = BankTransaction.Create(
-            tenantId: tenantId,
+            tenantId: tenant.Id,
             accountId: request.AccountId,
             type: request.Type,
             amount: amount,

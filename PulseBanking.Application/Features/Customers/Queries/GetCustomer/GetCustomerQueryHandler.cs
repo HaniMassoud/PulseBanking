@@ -21,7 +21,9 @@ public class GetCustomerQueryHandler : IRequestHandler<GetCustomerQuery, Custome
 
     public async Task<Customer> Handle(GetCustomerQuery request, CancellationToken cancellationToken)
     {
-        var tenantId = _tenantService.GetCurrentTenant();
+        var tenant = _tenantService.GetCurrentTenant();
+        if (tenant == null)
+            throw new UnauthorizedAccessException("No tenant context found");
 
         var customer = await _context.Customers
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
@@ -32,7 +34,7 @@ public class GetCustomerQueryHandler : IRequestHandler<GetCustomerQuery, Custome
         }
 
         // Verify tenant access
-        if (customer.TenantId != tenantId)
+        if (customer.TenantId != tenant.Id)
         {
             throw new UnauthorizedAccessException("Customer does not belong to the current tenant");
         }

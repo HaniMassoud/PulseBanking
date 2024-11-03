@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using PulseBanking.Application.Common.Models;
 using PulseBanking.Application.Interfaces;
+using PulseBanking.Domain.Enums;
 
 namespace PulseBanking.Infrastructure.Services;
 
@@ -24,16 +25,21 @@ public class TenantManager : ITenantManager
         {
             var settings = new TenantSettings
             {
-                TenantId = tenantSection["Id"] ?? throw new InvalidOperationException($"Tenant ID not found in configuration"),
+                Id = tenantSection["Id"] ?? throw new InvalidOperationException($"Tenant ID not found in configuration"),
                 Name = tenantSection["Name"] ?? throw new InvalidOperationException($"Name not found for tenant {tenantSection["Id"]}"),
+                DeploymentType = Enum.Parse<DeploymentType>(tenantSection["DeploymentType"] ?? "Shared"),
+                Region = Enum.Parse<RegionCode>(tenantSection["Region"] ?? "AUS"),
+                InstanceType = Enum.Parse<InstanceType>(tenantSection["InstanceType"] ?? "Production"),
                 ConnectionString = tenantSection["ConnectionString"] ?? throw new InvalidOperationException($"ConnectionString not found for tenant {tenantSection["Id"]}"),
                 CurrencyCode = tenantSection["CurrencyCode"] ?? "USD",
                 DefaultTransactionLimit = decimal.Parse(tenantSection["DefaultTransactionLimit"] ?? "10000"),
+                TimeZone = tenantSection["TimeZone"] ?? "UTC",
                 IsActive = bool.Parse(tenantSection["IsActive"] ?? "true"),
-                TimeZone = tenantSection["TimeZone"] ?? "UTC"  // Changed to use string directly
+                CreatedAt = DateTime.Parse(tenantSection["CreatedAt"] ?? DateTime.UtcNow.ToString("O")),
+                DataSovereigntyCompliant = bool.Parse(tenantSection["DataSovereigntyCompliant"] ?? "true")
             };
 
-            _tenantSettings[settings.TenantId] = settings;
+            _tenantSettings[settings.Id] = settings;
         }
     }
 
@@ -43,7 +49,6 @@ public class TenantManager : ITenantManager
         {
             return Task.FromResult(settings);
         }
-
         throw new KeyNotFoundException($"Tenant '{tenantId}' not found.");
     }
 

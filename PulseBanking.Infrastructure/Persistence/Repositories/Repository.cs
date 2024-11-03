@@ -1,11 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace PulseBanking.Infrastructure.Persistence.Repositories;
+using PulseBanking.Infrastructure.Persistence.Repositories;
+using PulseBanking.Infrastructure.Persistence;
 
 public class Repository<T> : IRepository<T> where T : class
 {
@@ -33,14 +28,17 @@ public class Repository<T> : IRepository<T> where T : class
         await _dbSet.AddAsync(entity);
     }
 
-    public virtual async Task UpdateAsync(T entity)
+    // Remove async since these don't use await
+    public virtual Task UpdateAsync(T entity)
     {
         _dbSet.Update(entity);
+        return Task.CompletedTask;
     }
 
-    public virtual async Task DeleteAsync(T entity)
+    public virtual Task DeleteAsync(T entity)
     {
         _dbSet.Remove(entity);
+        return Task.CompletedTask;
     }
 
     public virtual async Task SaveChangesAsync()

@@ -22,10 +22,12 @@ public class CreateCustomerCommandHandler : IRequestHandler<CreateCustomerComman
 
     public async Task<Customer> Handle(CreateCustomerCommand request, CancellationToken cancellationToken)
     {
-        var tenantId = _tenantService.GetCurrentTenant();
+        var tenant = _tenantService.GetCurrentTenant();
+        if (tenant == null)
+            throw new UnauthorizedAccessException("No tenant context found");
 
         var customer = Customer.Create(
-            tenantId,
+            tenant.Id,
             request.FirstName,
             request.LastName,
             request.Email,

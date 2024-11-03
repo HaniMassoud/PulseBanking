@@ -20,7 +20,8 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>, IApplicatio
         _tenantService = tenantService;
         try
         {
-            _currentTenantId = _tenantService.GetCurrentTenant();
+            var tenant = _tenantService.GetCurrentTenant();
+            _currentTenantId = tenant?.Id;
         }
         catch
         {

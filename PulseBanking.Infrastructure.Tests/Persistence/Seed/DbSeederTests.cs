@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using PulseBanking.Application.Interfaces;
 using PulseBanking.Domain.Entities;
@@ -21,18 +22,41 @@ public class DbSeederTests
     public DbSeederTests()
     {
         _tenantServiceMock = new Mock<ITenantService>();
-        _tenantServiceMock.Setup(x => x.GetCurrentTenant()).Returns("test-tenant");
+        var testTenant = CreateTestTenant();
+        _tenantServiceMock.Setup(x => x.GetCurrentTenant()).Returns(testTenant);
 
-        // Set up UserManager mock
+        // Set up UserManager mock with required dependencies
         var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var optionsAccessor = new Mock<IOptions<IdentityOptions>>();
+        optionsAccessor.Setup(x => x.Value).Returns(new IdentityOptions());
+        var userValidators = new List<IUserValidator<IdentityUser>>();
+        var passwordValidators = new List<IPasswordValidator<IdentityUser>>();
+        var keyNormalizer = new UpperInvariantLookupNormalizer();
+        var errors = new IdentityErrorDescriber();
+        var services = new Mock<IServiceProvider>();
+        var logger = new Mock<ILogger<UserManager<IdentityUser>>>();
+
         _userManagerMock = new Mock<UserManager<IdentityUser>>(
             userStoreMock.Object,
-            null, null, null, null, null, null, null, null);
+            optionsAccessor.Object,
+            new PasswordHasher<IdentityUser>(),
+            new IUserValidator<IdentityUser>[] { },
+            new IPasswordValidator<IdentityUser>[] { },
+            new UpperInvariantLookupNormalizer(),
+            new IdentityErrorDescriber(),
+            new Mock<IServiceProvider>().Object,
+            new Mock<ILogger<UserManager<IdentityUser>>>().Object);
 
-        // Set up RoleManager mock
+        // Set up RoleManager mock with required dependencies
         var roleStoreMock = new Mock<IRoleStore<IdentityRole>>();
+        var roleValidators = new List<IRoleValidator<IdentityRole>>();
+
         _roleManagerMock = new Mock<RoleManager<IdentityRole>>(
-            roleStoreMock.Object, null, null, null, null);
+            roleStoreMock.Object,
+            roleValidators,
+            keyNormalizer,
+            errors,
+            logger.Object);
 
         _loggerMock = new Mock<ILogger<ApplicationDbContext>>();
 
@@ -181,5 +205,24 @@ public class DbSeederTests
         Assert.Equal("Existing System", tenant.Name);
         Assert.Equal(DeploymentType.Shared, tenant.DeploymentType);
         Assert.Equal(RegionCode.AUS, tenant.Region);
+    }
+
+    private Tenant CreateTestTenant(string id = "test-tenant")
+    {
+        return new Tenant
+        {
+            Id = id,
+            Name = "Test Tenant",
+            DeploymentType = DeploymentType.Shared,
+            Region = RegionCode.AUS,
+            InstanceType = InstanceType.Production,
+            ConnectionString = "test-connection",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            DataSovereigntyCompliant = true,
+            TimeZone = "UTC",
+            CurrencyCode = "USD",
+            DefaultTransactionLimit = 10000m
+        };
     }
 }
