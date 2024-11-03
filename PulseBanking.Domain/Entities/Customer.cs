@@ -54,4 +54,19 @@ public class Customer : BaseEntity
 
         _accounts.Add(account);
     }
+
+    public void UpdateDetails(string firstName, string lastName, string email, string phoneNumber)
+    {
+        if (string.IsNullOrWhiteSpace(firstName))
+            throw new ArgumentException("FirstName cannot be empty", nameof(firstName));
+        if (string.IsNullOrWhiteSpace(lastName))
+            throw new ArgumentException("LastName cannot be empty", nameof(lastName));
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("Email cannot be empty", nameof(email));
+
+        FirstName = firstName;
+        LastName = lastName;
+        Email = email;
+        PhoneNumber = phoneNumber;
+    }
 }

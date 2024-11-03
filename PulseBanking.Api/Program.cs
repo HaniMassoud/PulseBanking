@@ -1,5 +1,8 @@
 using Microsoft.OpenApi.Models;
+using PulseBanking.Api.Filters;
 using PulseBanking.Application;
+using PulseBanking.Application.Features.Roles.Common;
+using PulseBanking.Application.Features.Users.Common;
 using PulseBanking.Infrastructure;
 using PulseBanking.Infrastructure.Middleware;
 using PulseBanking.Infrastructure.Persistence.Seed;
@@ -9,7 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
-builder.Services.AddControllers();
+
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ApiExceptionFilter>();
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -50,6 +58,13 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader());
 });
 
+builder.Services.AddAutoMapper(config =>
+{
+    // Option 1: Register profiles manually
+    config.AddProfile<UserMappingProfile>();
+    config.AddProfile<RoleMappingProfile>();
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -72,30 +87,4 @@ app.UseCors("AllowWebApp");
 app.UseAuthorization();
 app.MapControllers();
 
-// Weather forecast endpoint (you can remove this later)
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
-
 app.Run();
-
-internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

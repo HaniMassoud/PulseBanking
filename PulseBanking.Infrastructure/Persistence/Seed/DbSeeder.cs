@@ -1,5 +1,7 @@
 ﻿// Update src/PulseBanking.Infrastructure/Persistence/Seed/DbSeeder.cs
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using PulseBanking.Domain.Entities;
 using PulseBanking.Domain.Enums;
 
@@ -7,72 +9,85 @@ namespace PulseBanking.Infrastructure.Persistence.Seed;
 
 public static class DbSeeder
 {
-    // Update src/PulseBanking.Infrastructure/Persistence/Seed/DbSeeder.cs
-    public static async Task SeedDefaultTenantsAsync(ApplicationDbContext context)
+    public static async Task SeedDefaultTenantsAsync(
+        ApplicationDbContext context,
+        UserManager<IdentityUser> userManager,
+        RoleManager<IdentityRole> roleManager,
+        ILogger logger)
     {
         // Only seed if no tenants exist
         if (!await context.Tenants.AnyAsync())
         {
             var now = DateTime.UtcNow;
-            var tenants = new List<Tenant>
-        {
-            new Tenant
+            var systemTenant = new Tenant
             {
-                // Required properties
-                Id = "aus-shared-prod",
-                Name = "Australia Shared Production",
+                Id = "system",
+                Name = "System Tenant",
                 DeploymentType = DeploymentType.Shared,
                 Region = RegionCode.AUS,
                 InstanceType = InstanceType.Production,
-                ConnectionString = "Server=(local);Database=PulseBanking_AUS_Shared;Trusted_Connection=True;MultipleActiveResultSets=true;Trust Server Certificate=True;",
+                ConnectionString = "Server=(local);Database=PulseBanking_System;Trusted_Connection=True;MultipleActiveResultSets=true;Trust Server Certificate=True;",
                 CreatedAt = now,
                 DataSovereigntyCompliant = true,
-
-                // Optional properties (with default values)
-                DedicatedHostName = null,
-                CurrencyCode = "AUD",  // Override default USD
-                DefaultTransactionLimit = 10000m,
-                TimeZone = "Australia/Sydney",  // Override default UTC
+                CurrencyCode = "USD",
+                DefaultTransactionLimit = 1000000m,
+                TimeZone = "UTC",
                 IsActive = true,
                 CreatedBy = "System",
-                LastModifiedAt = null,
-                LastModifiedBy = null,
-                TrialEndsAt = null,
-                RegulatoryNotes = "Compliant with Australian banking regulations"
-            },
-            new Tenant
+                RegulatoryNotes = "System tenant for platform administration"
+            };
+
+            var demoTenant = new Tenant
             {
-                // Required properties
-                Id = "demo-instance",
-                Name = "Pulse Banking Demo",
+                Id = "demo",
+                Name = "Demo Bank",
                 DeploymentType = DeploymentType.Shared,
                 Region = RegionCode.AUS,
                 InstanceType = InstanceType.Demo,
                 ConnectionString = "Server=(local);Database=PulseBanking_Demo;Trusted_Connection=True;MultipleActiveResultSets=true;Trust Server Certificate=True;",
                 CreatedAt = now,
                 DataSovereigntyCompliant = true,
-
-                // Optional properties (with default values)
-                DedicatedHostName = null,
-                CurrencyCode = "USD",  // Using default
-                DefaultTransactionLimit = 1000m,  // Lower limit for demo
-                TimeZone = "UTC",  // Using default
+                CurrencyCode = "USD",
+                DefaultTransactionLimit = 1000m,
+                TimeZone = "UTC",
                 IsActive = true,
                 CreatedBy = "System",
-                LastModifiedAt = null,
-                LastModifiedBy = null,
-                TrialEndsAt = now.AddYears(1),
-                RegulatoryNotes = "Demo instance for evaluation purposes"
-            }
-        };
+                TrialEndsAt = now.AddMonths(1),
+                RegulatoryNotes = "Demo tenant for evaluation purposes"
+            };
 
-            await context.Tenants.AddRangeAsync(tenants);
+            await context.Tenants.AddRangeAsync(systemTenant, demoTenant);
             await context.SaveChangesAsync();
+
+            // Seed roles for system tenant
+            await IdentityDataSeeder.SeedRolesAsync(logger, roleManager, systemTenant.Id);
+
+            // Create system admin
+            await IdentityDataSeeder.SeedSystemAdminAsync(logger, userManager, roleManager, systemTenant.Id);
+
+            // Seed roles for demo tenant
+            await IdentityDataSeeder.SeedRolesAsync(logger, roleManager, demoTenant.Id);
+
+            // Create demo admin
+            await IdentityDataSeeder.SeedTenantAdminAsync(
+                logger,
+                userManager,
+                demoTenant.Id,
+                "admin@demobank.com",
+                "Demo123!@#");
         }
     }
 
-    public static async Task SeedDataAsync(ApplicationDbContext context, string tenantId)
+    public static async Task SeedDataAsync(
+        ApplicationDbContext context,
+        string tenantId,
+        UserManager<IdentityUser> userManager,
+        RoleManager<IdentityRole> roleManager,
+        ILogger logger)
     {
+        // Seed roles for new tenant
+        await IdentityDataSeeder.SeedRolesAsync(logger, roleManager, tenantId);
+
         // Only seed if no accounts exist for this tenant
         if (!await context.Accounts.AnyAsync(a => a.TenantId == tenantId))
         {
@@ -81,12 +96,13 @@ public static class DbSeeder
                 tenantId: tenantId,
                 firstName: "John",
                 lastName: "Doe",
-                email: "john.doe@tenant1.com",
+                email: "john.doe@demobank.com",
                 phoneNumber: "1234567890"
             );
             await context.Customers.AddAsync(customer);
             await context.SaveChangesAsync();
 
+            // Create demo accounts
             var accounts = new List<Account>
             {
                 Account.Create(
@@ -111,8 +127,23 @@ public static class DbSeeder
                     status: AccountStatus.Inactive
                 )
             };
+
             await context.Accounts.AddRangeAsync(accounts);
             await context.SaveChangesAsync();
+
+            // Create a user account for the customer
+            var customerUser = new IdentityUser
+            {
+                UserName = customer.Email,
+                Email = customer.Email,
+                EmailConfirmed = true
+            };
+
+            var result = await userManager.CreateAsync(customerUser, "Customer123!@#");
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(customerUser, "Customer");
+            }
         }
     }
 }

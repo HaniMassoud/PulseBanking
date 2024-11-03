@@ -1,12 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace PulseBanking.Domain.Enums;
 
-namespace PulseBanking.Domain.Enums
+public enum TransactionType
 {
-    internal class TransactionType
-    {
-    }
+    Deposit,
+    Withdrawal,
+    Transfer,
+    Interest,
+    Fee,
+    Refund,
+    Adjustment,
+    DirectDebit,
+    DirectCredit,
+    InternationalTransfer,
+    ATMWithdrawal,
+    POSPayment,
+    StandingOrder,
+    LoanDisbursement,
+    LoanRepayment
 }

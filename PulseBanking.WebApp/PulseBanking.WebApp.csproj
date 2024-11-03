@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -15,7 +15,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\PulseBanking.Api\PulseBanking.Api.csproj" />
+    <ProjectReference Include="..\PulseBanking.Application\PulseBanking.Application.csproj" />
     <ProjectReference Include="..\PulseBanking.Domain\PulseBanking.Domain.csproj" />
+    <ProjectReference Include="..\PulseBanking.Infrastructure\PulseBanking.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Data\Migrations\" />
   </ItemGroup>
 
 </Project>

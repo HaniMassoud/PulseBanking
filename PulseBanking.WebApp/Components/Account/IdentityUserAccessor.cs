@@ -1,11 +1,10 @@
 using Microsoft.AspNetCore.Identity;
-using PulseBanking.WebApp.Data;
 
 namespace PulseBanking.WebApp.Components.Account
 {
-    internal sealed class IdentityUserAccessor(UserManager<ApplicationUser> userManager, IdentityRedirectManager redirectManager)
+    internal sealed class IdentityUserAccessor(UserManager<IdentityUser> userManager, IdentityRedirectManager redirectManager)
     {
-        public async Task<ApplicationUser> GetRequiredUserAsync(HttpContext context)
+        public async Task<IdentityUser> GetRequiredUserAsync(HttpContext context)
         {
             var user = await userManager.GetUserAsync(context.User);
 

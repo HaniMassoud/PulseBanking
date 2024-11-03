@@ -1,10 +1,8 @@
-// Program.cs
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using PulseBanking.WebApp.Components;
 using PulseBanking.WebApp.Components.Account;
-using PulseBanking.WebApp.Data;
+using PulseBanking.WebApp.Identity;
 using PulseBanking.WebApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,25 +11,45 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Configure HTTP clients
+builder.Services.AddHttpClient<ITenantApiClient, TenantApiClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7060/");
+});
+
+builder.Services.AddHttpClient<IIdentityApiClient, IdentityApiClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7060/");
+});
+
+builder.Services.AddHttpClient("PulseBankingAPI", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7060/");
+});
+
 // Authentication and Identity
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
-// Configure HTTP client and services for tenant management
-//builder.Services.AddHttpClient("PulseBankingApi", client =>
-//{
-//    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7060/");
-//});
-//builder.Services.AddScoped<ITenantService, TenantService>();
+// Identity stores
+builder.Services.AddScoped<IUserStore<IdentityUser>, ApiUserStore>();
+builder.Services.AddScoped<IRoleStore<IdentityRole>, ApiRoleStore>();
 
-builder.Services.AddHttpClient<ITenantService, TenantService>(client =>
+builder.Services.AddIdentityCore<IdentityUser>(options =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7060/");
-});
+    options.SignIn.RequireConfirmedAccount = true;
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequiredLength = 8;
+})
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
 
-// Authentication configuration
+// Configure authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = IdentityConstants.ApplicationScheme;
@@ -39,39 +57,28 @@ builder.Services.AddAuthentication(options =>
 })
     .AddIdentityCookies();
 
-// Database context
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
-// Identity configuration
-builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddSignInManager()
-    .AddDefaultTokenProviders();
-
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+builder.Services.AddSingleton<IEmailSender<IdentityUser>, IdentityNoOpEmailSender>();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseMigrationsEndPoint();
+    app.UseDeveloperExceptionPage();
 }
 else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-
 app.UseStaticFiles();
 app.UseAntiforgery();
+
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

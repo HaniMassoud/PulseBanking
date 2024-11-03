@@ -4,7 +4,7 @@
 @using PulseBanking.Domain.Enums
 @inject NavigationManager Navigation
 @inject ILogger<TenantRegistration> Logger
-@inject ITenantService TenantService
+@inject ITenantApiClient TenantApiClient
 @inject IJSRuntime JSRuntime
 
 @rendermode InteractiveServer
@@ -16,183 +16,185 @@
 
     @if (!string.IsNullOrEmpty(errorMessage))
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <strong>Error!</strong> @errorMessage
-            <button type="button" class="btn-close" @onclick="DismissError" aria-label="Close"></button>
-        </div>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong>Error!</strong> @errorMessage
+                <button type="button" class="btn-close" @onclick="DismissError" aria-label="Close"></button>
+            </div>
     }
 
     @if (isLoading)
     {
-        <div class="text-center">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
             </div>
-        </div>
     }
-
-    <!-- Add this debug section temporarily -->
-    <div class="alert alert-info mt-3">
-        <strong>Debug Info:</strong><br />
-        Bank Name: @registrationModel.BankName<br />
-        Time Zone: @registrationModel.TimeZone<br />
-        Currency: @registrationModel.CurrencyCode<br />
-        Deployment Type: @registrationModel.DeploymentType<br />
-        Region: @registrationModel.Region<br />
-        Instance Type: @registrationModel.InstanceType<br />
-        Data Sovereignty Compliant: @registrationModel.DataSovereigntyCompliant<br />
-        First Name: @registrationModel.AdminFirstName<br />
-        Last Name: @registrationModel.AdminLastName<br />
-        Email: @registrationModel.AdminEmail<br />
-    </div>
 
     <EditForm Model="@registrationModel" OnValidSubmit="HandleValidSubmit" OnInvalidSubmit="HandleInvalidSubmit" FormName="tenant-registration">
         <DataAnnotationsValidator />
         <ValidationSummary />
 
-        <div class="mb-3">
-            <h3>Bank Details</h3>
-            <label for="bankName" class="form-label">Bank Name</label>
-            <InputText id="bankName" class="form-control" @bind-Value="registrationModel.BankName" />
-            <ValidationMessage For="@(() => registrationModel.BankName)" />
-        </div>
-
-        <div class="mb-3">
-            <label for="timeZone" class="form-label">Time Zone</label>
-            <InputSelect id="timeZone" class="form-control" @bind-Value="registrationModel.TimeZone">
-                @foreach (var timeZone in TimeZoneInfo.GetSystemTimeZones())
-                {
-                    <option value="@timeZone.Id">@timeZone.DisplayName</option>
-                }
-            </InputSelect>
-            <ValidationMessage For="@(() => registrationModel.TimeZone)" />
-        </div>
-
-        <div class="mb-3">
-            <label for="currencyCode" class="form-label">Currency</label>
-            <InputSelect id="currencyCode" class="form-control" @bind-Value="registrationModel.CurrencyCode">
-                <option value="USD">US Dollar (USD)</option>
-                <option value="EUR">Euro (EUR)</option>
-                <option value="GBP">British Pound (GBP)</option>
-                <option value="AUD">Australian Dollar (AUD)</option>
-            </InputSelect>
-            <ValidationMessage For="@(() => registrationModel.CurrencyCode)" />
-        </div>
-
-        <div class="mb-3">
-            <label for="defaultTransactionLimit" class="form-label">Default Transaction Limit</label>
-            <InputNumber id="defaultTransactionLimit" class="form-control" @bind-Value="registrationModel.DefaultTransactionLimit" />
-            <ValidationMessage For="@(() => registrationModel.DefaultTransactionLimit)" />
-        </div>
-
-        <div class="mb-3">
-            <h3>Deployment Configuration</h3>
-            <label for="deploymentType" class="form-label">Deployment Type</label>
-            <InputSelect id="deploymentType" class="form-control" @bind-Value="registrationModel.DeploymentType">
-                <option value="@DeploymentType.Shared">Shared Infrastructure</option>
-                <option value="@DeploymentType.Dedicated">Dedicated Infrastructure</option>
-            </InputSelect>
-            <ValidationMessage For="@(() => registrationModel.DeploymentType)" />
-        </div>
-
-        <div class="mb-3">
-            <label for="region" class="form-label">Region</label>
-            <InputSelect id="region" class="form-control" @bind-Value="registrationModel.Region">
-                <option value="@RegionCode.AUS">Australia</option>
-                <option value="@RegionCode.EUR">Europe</option>
-                <option value="@RegionCode.USA">United States</option>
-            </InputSelect>
-            <ValidationMessage For="@(() => registrationModel.Region)" />
-        </div>
-
-        <div class="mb-3">
-            <label for="instanceType" class="form-label">Instance Type</label>
-            <InputSelect id="instanceType" class="form-control" @bind-Value="registrationModel.InstanceType">
-                <option value="@InstanceType.Production">Production</option>
-                <option value="@InstanceType.Demo">Demo</option>
-                <option value="@InstanceType.Trial">Trial</option>
-            </InputSelect>
-            <ValidationMessage For="@(() => registrationModel.InstanceType)" />
-        </div>
-
-        <div class="mb-3">
-            <div class="form-check">
-                <InputCheckbox id="dataSovereigntyCompliant" class="form-check-input" @bind-Value="registrationModel.DataSovereigntyCompliant" />
-                <label class="form-check-label" for="dataSovereigntyCompliant">
-                    Comply with data sovereignty requirements
-                </label>
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0">Bank Details</h3>
             </div>
-            <ValidationMessage For="@(() => registrationModel.DataSovereigntyCompliant)" />
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="bankName" class="form-label">Bank Name</label>
+                    <InputText id="bankName" class="form-control" @bind-Value="registrationModel.BankName" />
+                    <ValidationMessage For="@(() => registrationModel.BankName)" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="timeZone" class="form-label">Time Zone</label>
+                    <InputSelect id="timeZone" class="form-control" @bind-Value="registrationModel.TimeZone">
+                        @foreach (var timeZone in TimeZoneInfo.GetSystemTimeZones())
+                        {
+                                <option value="@timeZone.Id">@timeZone.DisplayName</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => registrationModel.TimeZone)" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="currencyCode" class="form-label">Currency</label>
+                    <InputSelect id="currencyCode" class="form-control" @bind-Value="registrationModel.CurrencyCode">
+                        <option value="USD">US Dollar (USD)</option>
+                        <option value="EUR">Euro (EUR)</option>
+                        <option value="GBP">British Pound (GBP)</option>
+                        <option value="AUD">Australian Dollar (AUD)</option>
+                    </InputSelect>
+                    <ValidationMessage For="@(() => registrationModel.CurrencyCode)" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="defaultTransactionLimit" class="form-label">Default Transaction Limit</label>
+                    <InputNumber id="defaultTransactionLimit" class="form-control" @bind-Value="registrationModel.DefaultTransactionLimit" />
+                    <ValidationMessage For="@(() => registrationModel.DefaultTransactionLimit)" />
+                </div>
+            </div>
         </div>
 
-        <h3 class="mt-4">Administrator Account</h3>
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0">Deployment Configuration</h3>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="deploymentType" class="form-label">Deployment Type</label>
+                    <InputSelect id="deploymentType" class="form-control" @bind-Value="registrationModel.DeploymentType">
+                        <option value="@DeploymentType.Shared">Shared Infrastructure</option>
+                        <option value="@DeploymentType.Dedicated">Dedicated Infrastructure</option>
+                    </InputSelect>
+                    <ValidationMessage For="@(() => registrationModel.DeploymentType)" />
+                </div>
 
-        <div class="mb-3">
-            <label for="adminFirstName" class="form-label">First Name</label>
-            <InputText id="adminFirstName" class="form-control" @bind-Value="registrationModel.AdminFirstName" />
-            <ValidationMessage For="@(() => registrationModel.AdminFirstName)" />
+                <div class="mb-3">
+                    <label for="region" class="form-label">Region</label>
+                    <InputSelect id="region" class="form-control" @bind-Value="registrationModel.Region">
+                        <option value="@RegionCode.AUS">Australia</option>
+                        <option value="@RegionCode.EUR">Europe</option>
+                        <option value="@RegionCode.USA">United States</option>
+                        <option value="@RegionCode.GBR">Great Britain</option>
+                    </InputSelect>
+                    <ValidationMessage For="@(() => registrationModel.Region)" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="instanceType" class="form-label">Instance Type</label>
+                    <InputSelect id="instanceType" class="form-control" @bind-Value="registrationModel.InstanceType">
+                        <option value="@InstanceType.Production">Production</option>
+                        <option value="@InstanceType.Demo">Demo</option>
+                        <option value="@InstanceType.Trial">Trial</option>
+                    </InputSelect>
+                    <ValidationMessage For="@(() => registrationModel.InstanceType)" />
+                </div>
+
+                <div class="mb-3">
+                    <div class="form-check">
+                        <InputCheckbox id="dataSovereigntyCompliant" class="form-check-input" @bind-Value="registrationModel.DataSovereigntyCompliant" />
+                        <label class="form-check-label" for="dataSovereigntyCompliant">
+                            Comply with data sovereignty requirements
+                        </label>
+                    </div>
+                    <ValidationMessage For="@(() => registrationModel.DataSovereigntyCompliant)" />
+                </div>
+            </div>
         </div>
 
-        <div class="mb-3">
-            <label for="adminLastName" class="form-label">Last Name</label>
-            <InputText id="adminLastName" class="form-control" @bind-Value="registrationModel.AdminLastName" />
-            <ValidationMessage For="@(() => registrationModel.AdminLastName)" />
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0">Administrator Account</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="adminFirstName" class="form-label">First Name</label>
+                        <InputText id="adminFirstName" class="form-control" @bind-Value="registrationModel.AdminFirstName" />
+                        <ValidationMessage For="@(() => registrationModel.AdminFirstName)" />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="adminLastName" class="form-label">Last Name</label>
+                        <InputText id="adminLastName" class="form-control" @bind-Value="registrationModel.AdminLastName" />
+                        <ValidationMessage For="@(() => registrationModel.AdminLastName)" />
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="adminEmail" class="form-label">Email</label>
+                    <InputText id="adminEmail" class="form-control" @bind-Value="registrationModel.AdminEmail" />
+                    <ValidationMessage For="@(() => registrationModel.AdminEmail)" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="adminPassword" class="form-label">Password</label>
+                    <InputText id="adminPassword" type="password" class="form-control" @bind-Value="registrationModel.AdminPassword" />
+                    <ValidationMessage For="@(() => registrationModel.AdminPassword)" />
+                    <small class="form-text text-muted">
+                        Password must be at least 8 characters long and include uppercase, lowercase, numbers, and special characters.
+                    </small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="adminPhoneNumber" class="form-label">Phone Number</label>
+                    <InputText id="adminPhoneNumber" class="form-control" @bind-Value="registrationModel.AdminPhoneNumber" />
+                    <ValidationMessage For="@(() => registrationModel.AdminPhoneNumber)" />
+                </div>
+            </div>
         </div>
 
-        <div class="mb-3">
-            <label for="adminEmail" class="form-label">Email</label>
-            <InputText id="adminEmail" class="form-control" @bind-Value="registrationModel.AdminEmail" />
-            <ValidationMessage For="@(() => registrationModel.AdminEmail)" />
+        <div class="d-grid gap-2 d-md-flex justify-content-md-center mb-4">
+            <button type="submit" class="btn btn-primary btn-lg" disabled="@isLoading">
+                @if (isLoading)
+                {
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span class="ms-1">Registering...</span>
+                }
+                else
+                {
+                        <span>Register Bank</span>
+                }
+            </button>
         </div>
-
-        <div class="mb-3">
-            <label for="adminPassword" class="form-label">Password</label>
-            <InputText id="adminPassword" type="password" class="form-control" @bind-Value="registrationModel.AdminPassword" />
-            <ValidationMessage For="@(() => registrationModel.AdminPassword)" />
-        </div>
-
-        <div class="mb-3">
-            <label for="adminPhoneNumber" class="form-label">Phone Number</label>
-            <InputText id="adminPhoneNumber" class="form-control" @bind-Value="registrationModel.AdminPhoneNumber" />
-            <ValidationMessage For="@(() => registrationModel.AdminPhoneNumber)" />
-        </div>
-
-        <button type="submit" class="btn btn-primary" disabled="@isLoading">
-            @if (isLoading)
-            {
-                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                <span class="ms-1">Registering...</span>
-            }
-            else
-            {
-                <span>Register</span>
-            }
-        </button>
     </EditForm>
 </div>
 
 @code {
     private TenantRegistrationModel registrationModel = new()
         {
-            TimeZone = TimeZoneInfo.Local.Id,  // Use local time zone as default
+            TimeZone = TimeZoneInfo.Local.Id,
             CurrencyCode = "USD",
             DefaultTransactionLimit = 10000m,
-            BankName = string.Empty,
-            AdminFirstName = string.Empty,
-            AdminLastName = string.Empty,
-            AdminEmail = string.Empty,
-            AdminPassword = string.Empty,
-            AdminPhoneNumber = string.Empty
+            DeploymentType = DeploymentType.Shared,
+            Region = RegionCode.AUS,
+            InstanceType = InstanceType.Production,
+            DataSovereigntyCompliant = true
         };
 
     private string? errorMessage;
     private bool isLoading;
-
-    protected override void OnInitialized()
-    {
-        Logger.LogInformation("===> TenantRegistration component initialized");
-        Logger.LogInformation("Initial model state: {@Model}", registrationModel);
-    }
 
     private void DismissError()
     {
@@ -201,51 +203,40 @@
 
     private void HandleInvalidSubmit(EditContext editContext)
     {
-        Logger.LogInformation("===> HandleInvalidSubmit called");
-
-        // Log the validation messages
-        var messages = editContext.GetValidationMessages();
-        foreach (var message in messages)
+        Logger.LogInformation("Form validation failed");
+        var validationMessages = editContext.GetValidationMessages();
+        foreach (var message in validationMessages)
         {
-            Logger.LogInformation("Validation error: {message}", message);
+            Logger.LogInformation("Validation error: {Message}", message);
         }
-
-        // Log all form values
-        Logger.LogInformation("Bank Name: {BankName}", registrationModel.BankName);
-        Logger.LogInformation("Time Zone: {TimeZone}", registrationModel.TimeZone);
-        Logger.LogInformation("Currency Code: {CurrencyCode}", registrationModel.CurrencyCode);
-        Logger.LogInformation("Transaction Limit: {Limit}", registrationModel.DefaultTransactionLimit);
-        Logger.LogInformation("Admin First Name: {FirstName}", registrationModel.AdminFirstName);
-        Logger.LogInformation("Admin Last Name: {LastName}", registrationModel.AdminLastName);
-        Logger.LogInformation("Admin Email: {Email}", registrationModel.AdminEmail);
-        Logger.LogInformation("Admin Phone: {Phone}", registrationModel.AdminPhoneNumber);
-
         errorMessage = "Please check the form for errors.";
     }
 
     private async Task HandleValidSubmit(EditContext editContext)
     {
-        Logger.LogInformation("===> HandleValidSubmit called");
-        Logger.LogInformation("Model state: {@Model}", registrationModel);
-
         try
         {
             isLoading = true;
             errorMessage = null;
 
-            await TenantService.RegisterTenantAsync(registrationModel);
-            Logger.LogInformation("Tenant registration submitted for {BankName}", registrationModel.BankName);
+            Logger.LogInformation("Submitting tenant registration for {BankName}", registrationModel.BankName);
+            await TenantApiClient.RegisterTenantAsync(registrationModel);
+
+            Logger.LogInformation("Registration successful for {BankName}", registrationModel.BankName);
+            await JSRuntime.InvokeVoidAsync("alert", "Registration successful! You will be redirected to the confirmation page.");
             Navigation.NavigateTo("/registration-success");
         }
         catch (HttpRequestException ex)
         {
-            Logger.LogError(ex, "Error registering tenant");
-            errorMessage = "Unable to connect to the server. Please try again later.";
+            Logger.LogError(ex, "API error during tenant registration");
+            errorMessage = "Unable to complete registration. Please try again later.";
+            await JSRuntime.InvokeVoidAsync("alert", "Registration failed: " + ex.Message);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error registering tenant");
+            Logger.LogError(ex, "Unexpected error during tenant registration");
             errorMessage = "An unexpected error occurred. Please try again later.";
+            await JSRuntime.InvokeVoidAsync("alert", "An unexpected error occurred during registration.");
         }
         finally
         {
@@ -266,5 +257,17 @@
         width: 1rem;
         height: 1rem;
         border-width: 0.15em;
+    }
+
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    .card-header {
+        background-color: #f8f9fa;
+    }
+
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
     }
 </style>

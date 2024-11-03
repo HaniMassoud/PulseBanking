@@ -4,11 +4,14 @@ A multi-tenant banking platform built with .NET 8, following Clean Architecture 
 
 ## Project Overview
 
-Pulse Banking Platform is a scalable, multi-tenant banking system that allows multiple banks to operate on a single platform while maintaining strict data isolation.
+Pulse Banking Platform is a scalable banking system that can be deployed in two ways:
+1. Regional Deployment: Multiple banks share a single platform instance while maintaining strict data isolation
+2. Dedicated Deployment: A single bank gets their own dedicated platform instance
 
-Pulse Banking Platform can be deployed separately for each region or country for data sovereignty and regulatory compliance.
-
-Pulse Banking Platform can also be deployed for a single Bank or Financial Institution that wants a dedicated, single-tenant platform.
+Each deployed instance of Pulse Banking Platform operates completely independently. They run in separate cloud accounts with no shared resources or cross-communication between instances. This deployment flexibility allows for:
+- Data sovereignty through regional deployments
+- Complete isolation for banks requiring dedicated infrastructure
+- Cost-effective shared infrastructure for banks comfortable with tenant-based isolation
 
 ## Architecture
 
@@ -30,7 +33,8 @@ PulseBanking/
 
 ## Key Features
 
-- Multi-tenant architecture with tenant isolation
+- Flexible deployment options (Regional shared or Bank-specific dedicated)
+- Tenant isolation within shared deployments
 - Clean Architecture implementation
 - Domain-Driven Design (DDD) practices
 - CQRS pattern using MediatR
@@ -38,14 +42,32 @@ PulseBanking/
 - Swagger API documentation
 - Entity Framework Core with SQL Server
 
+## Deployment Models
+### Regional Deployment
+
+- Multiple banks share a single platform instance
+- Each bank is isolated through tenant-based separation
+- All banks in the deployment share the same database
+- Suitable for banks comfortable with tenant-based isolation
+- Cost-effective through shared infrastructure
+
+### Dedicated Deployment
+
+- Single bank gets their own platform instance
+- Complete infrastructure isolation
+- Dedicated database and resources
+- Suitable for banks requiring complete isolation
+- Full control over the deployment
+
 ## Multi-tenant Implementation
 
 The platform implements multi-tenancy through:
 
-- Tenant-specific database isolation
-- Request header-based tenant identification
+- Tenant identification via request headers
 - Middleware-based tenant validation
 - Global query filters for data isolation
+- Tenant-specific configurations
+- Strict data separation at the application level
 
 ## Getting Started
 
@@ -73,25 +95,7 @@ git clone [repository-url]
 }
 ```
 
-3. Configure tenant settings in `appsettings.json`:
-
-```json
-{
-  "Tenants": {
-    "tenant1": {
-      "Id": "tenant1",
-      "Name": "First Bank",
-      "ConnectionString": "Server=(local);Database=PulseBanking;Trusted_Connection=True;MultipleActiveResultSets=true;Trust Server Certificate=True;",
-      "CurrencyCode": "USD",
-      "DefaultTransactionLimit": "10000",
-      "TimeZone": "UTC",
-      "IsActive": true
-    }
-  }
-}
-```
-
-4. Apply database migrations:
+3. Apply database migrations:
 
 ```bash
 dotnet ef database update -p src/PulseBanking.Infrastructure -s src/PulseBanking.Api
@@ -145,9 +149,9 @@ dotnet test
 ### Multi-tenancy
 
 - Header-based tenant identification (`X-TenantId` header)
-- Database-per-tenant strategy
 - Tenant middleware for validation
 - Global query filters for data isolation
+- Shared database with tenant-based separation
 
 ### Entity Framework
 
@@ -172,7 +176,7 @@ https://localhost:7060/swagger
 
 ### Required Headers
 
-- `X-TenantId`: Tenant identifier (required for all requests)
+- `X-TenantId`: Tenant identifier (required for all requests except tenant creation)
 
 ### Available Endpoints
 

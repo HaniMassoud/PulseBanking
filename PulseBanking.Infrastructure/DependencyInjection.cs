@@ -1,11 +1,16 @@
-﻿// Update src/PulseBanking.Infrastructure/DependencyInjection.cs
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PulseBanking.Application.Interfaces;
 using PulseBanking.Infrastructure.Persistence;
 using PulseBanking.Infrastructure.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using PulseBanking.Application.Common.Interfaces;
+using PulseBanking.Infrastructure.Persistence.Repositories;
+using PulseBanking.Infrastructure.Persistence.UnitOfWork;
+using PulseBanking.Infrastructure.Services.Events;
 
 namespace PulseBanking.Infrastructure;
 
@@ -29,9 +34,25 @@ public static class DependencyInjection
                 b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName));
         });
 
+        // Register Identity
+        services.AddIdentity<IdentityUser, IdentityRole>(options =>
+        {
+            // Configure identity options here
+            options.Password.RequireDigit = true;
+            options.Password.RequireLowercase = true;
+            options.Password.RequireUppercase = true;
+            options.Password.RequireNonAlphanumeric = true;
+            options.Password.RequiredLength = 8;
+
+            options.User.RequireUniqueEmail = true;
+            options.SignIn.RequireConfirmedEmail = true;
+        })
+        .AddEntityFrameworkStores<ApplicationDbContext>()
+        .AddDefaultTokenProviders();
+
         // Register services
         services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-        services.AddSingleton<ITenantManager, TenantManager>();  // Changed to Singleton
+        services.AddSingleton<ITenantManager, TenantManager>();
         services.AddScoped<ITenantService>(provider =>
         {
             var httpContextAccessor = provider.GetRequiredService<IHttpContextAccessor>();
@@ -58,6 +79,20 @@ public static class DependencyInjection
             var tenantId = httpContext?.Request.Headers["X-TenantId"].FirstOrDefault();
             return factory.CreateDbContext(tenantId!);
         });
+
+        // Register application services
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IAuditService, AuditService>();
+        services.AddScoped<IDateTime, DateTimeService>();
+        services.AddScoped<ICurrencyConverter, CurrencyConverter>();
+        services.AddScoped<ITransactionProcessor, TransactionProcessor>();
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IRoleService, RoleService>();
+
+        // Add new service registrations
+        services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IEventDispatcher, EventDispatcher>();
 
         return services;
     }
