@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using PulseBanking.Application.Interfaces;
 using PulseBanking.Domain.Entities;
+using PulseBanking.Domain.Enums;
 
 namespace PulseBanking.Infrastructure.Services;
 

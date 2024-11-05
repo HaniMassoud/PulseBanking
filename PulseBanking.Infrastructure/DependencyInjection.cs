@@ -74,6 +74,7 @@ public static class DependencyInjection
             var tenantManager = provider.GetRequiredService<ITenantManager>();
             return new TenantService(httpContextAccessor, tenantManager);
         });
+        services.AddScoped<ITenantValidator, TenantValidator>();
 
         // Register the options builder
         services.AddSingleton(optionsBuilder);

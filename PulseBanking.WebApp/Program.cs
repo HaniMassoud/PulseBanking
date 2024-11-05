@@ -92,10 +92,10 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseMiddleware<TenantAwareAntiforgeryMiddleware>();
+//app.UseMiddleware<TenantAwareAntiforgeryMiddleware>();
 
 // Antiforgery middleware - now correctly placed after auth middleware
-// app.UseAntiforgery();
+app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

@@ -30,6 +30,13 @@ public class TransactionProcessingBehavior<TRequest, TResponse> : IPipelineBehav
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
+        // Check if the request is for the tenant registration endpoint
+        if (request is ICreateTenantRequest)
+        {
+            _logger.LogDebug("Skipping transaction processing for tenant registration request");
+            return await next();
+        }
+        
         var tenantId = _tenantService.GetCurrentTenant();
 
         if (request is ITransactionRequest transactionRequest)

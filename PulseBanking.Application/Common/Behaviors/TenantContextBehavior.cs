@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using PulseBanking.Application.Interfaces;
 using System.Globalization;
 using PulseBanking.Domain.Entities;
+using PulseBanking.Application.Common.Interfaces;
 
 namespace PulseBanking.Application.Common.Behaviors;
 
@@ -25,6 +26,13 @@ public class TenantContextBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
+        // Check if the request is for the tenant registration endpoint
+        if (request is ICreateTenantRequest)
+        {
+            _logger.LogDebug("Skipping tenant context setup for tenant registration request");
+            return await next();
+        }
+
         var tenant = _tenantService.GetCurrentTenant();
 
         if (tenant != null && !string.IsNullOrEmpty(tenant.Id))

@@ -7,4 +7,5 @@ public class CreateUserDto
     public required string Password { get; init; }
     public required string PhoneNumber { get; init; }
     public List<string> Roles { get; init; } = new();
+    public required string TenantId { get; init; }
 }

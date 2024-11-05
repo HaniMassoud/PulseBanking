@@ -35,6 +35,7 @@ public class UserService : IUserService
     public async Task<IdentityResult> CreateAsync(CreateUserDto createUserDto)
     {
         var user = _mapper.Map<IdentityUser>(createUserDto);
+
         var result = await _userManager.CreateAsync(user, createUserDto.Password);
 
         if (result.Succeeded && createUserDto.Roles != null)

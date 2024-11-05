@@ -25,10 +25,10 @@ public class TenantMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        var endpoint = context.Request.Path;  // Use path instead of endpoint for now
+        var endpoint = context.Request.Path;
 
         // Skip tenant validation for registration endpoint
-        if (endpoint.Value?.EndsWith("/register", StringComparison.OrdinalIgnoreCase) == true)
+        if (endpoint.Value?.EndsWith("/api/Tenants/register", StringComparison.OrdinalIgnoreCase) == true)
         {
             _logger.LogDebug("Skipping tenant validation for registration endpoint");
             await _next(context);
@@ -43,7 +43,6 @@ public class TenantMiddleware
             return;
         }
 
-        // Rest of your existing code...
         if (string.IsNullOrWhiteSpace(tenantId))
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;

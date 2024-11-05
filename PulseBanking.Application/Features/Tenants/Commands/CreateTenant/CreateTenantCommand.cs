@@ -1,11 +1,12 @@
 ﻿// Update src/PulseBanking.Application/Features/Tenants/Commands/CreateTenant/CreateTenantCommand.cs
 using MediatR;
+using PulseBanking.Application.Common.Interfaces;
 using PulseBanking.Application.Features.Tenants.Common;
 using PulseBanking.Domain.Enums;
 
 namespace PulseBanking.Application.Features.Tenants.Commands.CreateTenant;
 
-public record CreateTenantCommand : IRequest<TenantDto>
+public record CreateTenantCommand : IRequest<TenantDto>, ICreateTenantRequest
 {
     public required string BankName { get; init; }
     public required string TimeZone { get; init; }
