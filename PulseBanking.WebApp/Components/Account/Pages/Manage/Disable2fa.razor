@@ -1,8 +1,9 @@
 ﻿@page "/Account/Manage/Disable2fa"
 
 @using Microsoft.AspNetCore.Identity
+@using PulseBanking.Domain.Entities
 
-@inject UserManager<IdentityUser> UserManager
+@inject UserManager<CustomIdentityUser> UserManager
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<Disable2fa> Logger
@@ -30,7 +31,7 @@
 </div>
 
 @code {
-    private IdentityUser user = default!;
+    private CustomIdentityUser user = default!;
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;

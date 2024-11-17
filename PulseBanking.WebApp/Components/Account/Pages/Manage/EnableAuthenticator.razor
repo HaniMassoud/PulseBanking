@@ -5,8 +5,9 @@
 @using System.Text
 @using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
+@using PulseBanking.Domain.Entities
 
-@inject UserManager<IdentityUser> UserManager
+@inject UserManager<CustomIdentityUser> UserManager
 @inject IdentityUserAccessor UserAccessor
 @inject UrlEncoder UrlEncoder
 @inject IdentityRedirectManager RedirectManager
@@ -69,7 +70,7 @@ else
     private const string AuthenticatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
 
     private string? message;
-    private IdentityUser user = default!;
+    private CustomIdentityUser user = default!;
     private string? sharedKey;
     private string? authenticatorUri;
     private IEnumerable<string>? recoveryCodes;
@@ -117,7 +118,7 @@ else
         }
     }
 
-    private async ValueTask LoadSharedKeyAndQrCodeUriAsync(IdentityUser user)
+    private async ValueTask LoadSharedKeyAndQrCodeUriAsync(CustomIdentityUser user)
     {
         // Load the authenticator key & QR code URI to display on the form
         var unformattedKey = await UserManager.GetAuthenticatorKeyAsync(user);

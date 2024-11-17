@@ -3,9 +3,10 @@
 @using System.Text
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
+@using PulseBanking.Domain.Entities
 
-@inject UserManager<IdentityUser> UserManager
-@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<CustomIdentityUser> UserManager
+@inject SignInManager<CustomIdentityUser> SignInManager
 @inject IdentityRedirectManager RedirectManager
 
 <PageTitle>Confirm email change</PageTitle>

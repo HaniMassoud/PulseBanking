@@ -1,9 +1,10 @@
 ﻿using System.Net.Http.Json;
 using Microsoft.AspNetCore.Identity;
+using PulseBanking.Domain.Entities;
 
 namespace PulseBanking.WebApp.Identity;
 
-public class ApiUserStore : IUserStore<IdentityUser>, IUserEmailStore<IdentityUser>, IUserPasswordStore<IdentityUser>
+public class ApiUserStore : IUserStore<CustomIdentityUser>, IUserEmailStore<CustomIdentityUser>, IUserPasswordStore<CustomIdentityUser>
 {
     private readonly HttpClient _httpClient;
 
@@ -12,29 +13,29 @@ public class ApiUserStore : IUserStore<IdentityUser>, IUserEmailStore<IdentityUs
         _httpClient = httpClient;
     }
 
-    public async Task<IdentityResult> CreateAsync(IdentityUser user, CancellationToken cancellationToken)
+    public async Task<IdentityResult> CreateAsync(CustomIdentityUser user, CancellationToken cancellationToken)
     {
         var response = await _httpClient.PostAsJsonAsync("api/users", user, cancellationToken);
         return await HandleResponseAsync(response);
     }
 
-    public async Task<IdentityResult> DeleteAsync(IdentityUser user, CancellationToken cancellationToken)
+    public async Task<IdentityResult> DeleteAsync(CustomIdentityUser user, CancellationToken cancellationToken)
     {
         var response = await _httpClient.DeleteAsync($"api/users/{user.Id}", cancellationToken);
         return await HandleResponseAsync(response);
     }
 
-    public async Task<IdentityResult> UpdateAsync(IdentityUser user, CancellationToken cancellationToken)
+    public async Task<IdentityResult> UpdateAsync(CustomIdentityUser user, CancellationToken cancellationToken)
     {
         var response = await _httpClient.PutAsJsonAsync($"api/users/{user.Id}", user, cancellationToken);
         return await HandleResponseAsync(response);
     }
 
-    public async Task<IdentityUser?> FindByIdAsync(string userId, CancellationToken cancellationToken)
+    public async Task<CustomIdentityUser?> FindByIdAsync(string userId, CancellationToken cancellationToken)
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<IdentityUser>($"api/users/{userId}", cancellationToken);
+            return await _httpClient.GetFromJsonAsync<CustomIdentityUser>($"api/users/{userId}", cancellationToken);
         }
         catch (HttpRequestException)
         {
@@ -42,11 +43,11 @@ public class ApiUserStore : IUserStore<IdentityUser>, IUserEmailStore<IdentityUs
         }
     }
 
-    public async Task<IdentityUser?> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
+    public async Task<CustomIdentityUser?> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<IdentityUser>($"api/users/email/{normalizedEmail}", cancellationToken);
+            return await _httpClient.GetFromJsonAsync<CustomIdentityUser>($"api/users/email/{normalizedEmail}", cancellationToken);
         }
         catch (HttpRequestException)
         {
@@ -54,72 +55,72 @@ public class ApiUserStore : IUserStore<IdentityUser>, IUserEmailStore<IdentityUs
         }
     }
 
-    public Task<string?> GetNormalizedUserNameAsync(IdentityUser user, CancellationToken cancellationToken)
+    public Task<string?> GetNormalizedUserNameAsync(CustomIdentityUser user, CancellationToken cancellationToken)
     {
         return Task.FromResult(user.NormalizedUserName);
     }
 
-    public Task<string?> GetUserNameAsync(IdentityUser user, CancellationToken cancellationToken)
+    public Task<string?> GetUserNameAsync(CustomIdentityUser user, CancellationToken cancellationToken)
     {
         return Task.FromResult(user.UserName);
     }
 
-    public Task SetNormalizedUserNameAsync(IdentityUser user, string? normalizedName, CancellationToken cancellationToken)
+    public Task SetNormalizedUserNameAsync(CustomIdentityUser user, string? normalizedName, CancellationToken cancellationToken)
     {
         user.NormalizedUserName = normalizedName;
         return Task.CompletedTask;
     }
 
-    public Task SetUserNameAsync(IdentityUser user, string? userName, CancellationToken cancellationToken)
+    public Task SetUserNameAsync(CustomIdentityUser user, string? userName, CancellationToken cancellationToken)
     {
         user.UserName = userName;
         return Task.CompletedTask;
     }
 
-    public Task<string?> GetEmailAsync(IdentityUser user, CancellationToken cancellationToken)
+    public Task<string?> GetEmailAsync(CustomIdentityUser user, CancellationToken cancellationToken)
     {
         return Task.FromResult(user.Email);
     }
 
-    public Task<bool> GetEmailConfirmedAsync(IdentityUser user, CancellationToken cancellationToken)
+    public Task<bool> GetEmailConfirmedAsync(CustomIdentityUser user, CancellationToken cancellationToken)
     {
         return Task.FromResult(user.EmailConfirmed);
     }
 
-    public Task<string?> GetNormalizedEmailAsync(IdentityUser user, CancellationToken cancellationToken)
+    public Task<string?> GetNormalizedEmailAsync(CustomIdentityUser user, CancellationToken cancellationToken)
     {
         return Task.FromResult(user.NormalizedEmail);
     }
 
-    public Task SetEmailAsync(IdentityUser user, string? email, CancellationToken cancellationToken)
+    public Task SetEmailAsync(CustomIdentityUser user, string? email, CancellationToken cancellationToken)
     {
         user.Email = email;
         return Task.CompletedTask;
     }
 
-    public Task SetEmailConfirmedAsync(IdentityUser user, bool confirmed, CancellationToken cancellationToken)
+    public Task SetEmailConfirmedAsync(CustomIdentityUser user, bool confirmed, CancellationToken cancellationToken)
     {
         user.EmailConfirmed = confirmed;
         return Task.CompletedTask;
     }
 
-    public Task SetNormalizedEmailAsync(IdentityUser user, string? normalizedEmail, CancellationToken cancellationToken)
+    public Task SetNormalizedEmailAsync(CustomIdentityUser user, string? normalizedEmail, CancellationToken cancellationToken)
     {
         user.NormalizedEmail = normalizedEmail;
         return Task.CompletedTask;
     }
 
-    public Task<string?> GetPasswordHashAsync(IdentityUser user, CancellationToken cancellationToken)
+    public Task<string?> GetPasswordHashAsync(CustomIdentityUser user, CancellationToken cancellationToken)
     {
         return Task.FromResult(user.PasswordHash);
     }
 
-    public Task<bool> HasPasswordAsync(IdentityUser user, CancellationToken cancellationToken)
+    public Task<bool> HasPasswordAsync(CustomIdentityUser user, CancellationToken cancellationToken)
     {
         return Task.FromResult(!string.IsNullOrEmpty(user.PasswordHash));
     }
 
-    public Task SetPasswordHashAsync(IdentityUser user, string? passwordHash, CancellationToken cancellationToken)
+    public Task SetPasswordHashAsync(CustomIdentityUser user, string? passwordHash, CancellationToken cancellationToken)
     {
         user.PasswordHash = passwordHash;
         return Task.CompletedTask;
@@ -143,16 +144,16 @@ public class ApiUserStore : IUserStore<IdentityUser>, IUserEmailStore<IdentityUs
         return IdentityResult.Failed(errors.ToArray());
     }
 
-    public Task<string> GetUserIdAsync(IdentityUser user, CancellationToken cancellationToken)
+    public Task<string> GetUserIdAsync(CustomIdentityUser user, CancellationToken cancellationToken)
     {
         return Task.FromResult(user.Id);
     }
 
-    public async Task<IdentityUser?> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
+    public async Task<CustomIdentityUser?> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<IdentityUser>($"api/users/name/{normalizedUserName}", cancellationToken);
+            return await _httpClient.GetFromJsonAsync<CustomIdentityUser>($"api/users/name/{normalizedUserName}", cancellationToken);
         }
         catch (HttpRequestException)
         {

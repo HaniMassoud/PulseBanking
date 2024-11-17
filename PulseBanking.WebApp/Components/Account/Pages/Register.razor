@@ -5,11 +5,12 @@
 @using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
+@using PulseBanking.Domain.Entities
 
-@inject UserManager<IdentityUser> UserManager
-@inject IUserStore<IdentityUser> UserStore
-@inject SignInManager<IdentityUser> SignInManager
-@inject IEmailSender<IdentityUser> EmailSender
+@inject UserManager<CustomIdentityUser> UserManager
+@inject IUserStore<CustomIdentityUser> UserStore
+@inject SignInManager<CustomIdentityUser> SignInManager
+@inject IEmailSender<CustomIdentityUser> EmailSender
 @inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
@@ -101,26 +102,26 @@
         RedirectManager.RedirectTo(ReturnUrl);
     }
 
-    private IdentityUser CreateUser()
+    private CustomIdentityUser CreateUser()
     {
         try
         {
-            return Activator.CreateInstance<IdentityUser>();
+            return Activator.CreateInstance<CustomIdentityUser>();
         }
         catch
         {
-            throw new InvalidOperationException($"Can't create an instance of '{nameof(IdentityUser)}'. " +
-                $"Ensure that '{nameof(IdentityUser)}' is not an abstract class and has a parameterless constructor.");
+            throw new InvalidOperationException($"Can't create an instance of '{nameof(CustomIdentityUser)}'. " +
+                $"Ensure that '{nameof(CustomIdentityUser)}' is not an abstract class and has a parameterless constructor.");
         }
     }
 
-    private IUserEmailStore<IdentityUser> GetEmailStore()
+    private IUserEmailStore<CustomIdentityUser> GetEmailStore()
     {
         if (!UserManager.SupportsUserEmail)
         {
             throw new NotSupportedException("The default UI requires a user store with email support.");
         }
-        return (IUserEmailStore<IdentityUser>)UserStore;
+        return (IUserEmailStore<CustomIdentityUser>)UserStore;
     }
 
     private sealed class InputModel

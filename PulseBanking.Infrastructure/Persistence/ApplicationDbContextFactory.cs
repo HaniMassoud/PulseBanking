@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using PulseBanking.Application.Interfaces;
 using PulseBanking.Domain.Entities;
 using PulseBanking.Domain.Enums;
@@ -21,10 +22,14 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
         optionsBuilder.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
 
+        // Create a logger factory and logger for design-time
+        var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+        var logger = loggerFactory.CreateLogger<ApplicationDbContext>();
+
         // Create a mock tenant service for design-time
         var tenantService = new DesignTimeTenantService();
 
-        return new ApplicationDbContext(optionsBuilder.Options, tenantService);
+        return new ApplicationDbContext(optionsBuilder.Options, tenantService, logger);
     }
 }
 

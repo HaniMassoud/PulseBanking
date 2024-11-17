@@ -2,9 +2,10 @@
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
+@using PulseBanking.Domain.Entities
 
-@inject UserManager<IdentityUser> UserManager
-@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<CustomIdentityUser> UserManager
+@inject SignInManager<CustomIdentityUser> SignInManager
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<DeletePersonalData> Logger
@@ -39,7 +40,7 @@
 
 @code {
     private string? message;
-    private IdentityUser user = default!;
+    private CustomIdentityUser user = default!;
     private bool requirePassword;
 
     [CascadingParameter]

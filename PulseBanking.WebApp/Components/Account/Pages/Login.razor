@@ -3,8 +3,9 @@
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
+@using PulseBanking.Domain.Entities
 
-@inject SignInManager<IdentityUser> SignInManager
+@inject SignInManager<CustomIdentityUser> SignInManager
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager

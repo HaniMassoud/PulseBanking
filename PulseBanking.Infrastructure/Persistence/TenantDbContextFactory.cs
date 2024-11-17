@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using PulseBanking.Application.Interfaces;
 using PulseBanking.Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace PulseBanking.Infrastructure.Persistence;
 
@@ -13,6 +14,7 @@ public class TenantDbContextFactory : ITenantDbContextFactory<ApplicationDbConte
     private readonly ITenantManager _tenantManager;
     private readonly DbContextOptionsBuilder<ApplicationDbContext> _optionsBuilder;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<ApplicationDbContext> _logger;
 
     public TenantDbContextFactory(
         ITenantManager tenantManager,
@@ -21,6 +23,11 @@ public class TenantDbContextFactory : ITenantDbContextFactory<ApplicationDbConte
         _tenantManager = tenantManager;
         _optionsBuilder = optionsBuilder;
         _serviceProvider = serviceProvider;
+
+        // Create a logger factory and logger
+        var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+        _logger = loggerFactory.CreateLogger<ApplicationDbContext>();
+
     }
 
     public ApplicationDbContext CreateDbContext(string tenantId)
@@ -30,7 +37,7 @@ public class TenantDbContextFactory : ITenantDbContextFactory<ApplicationDbConte
             // Create a default TenantService instance for the default DbContext
             var httpContextAccessor = _serviceProvider.GetRequiredService<IHttpContextAccessor>();
             var defaultTenantService = new TenantService(httpContextAccessor, _tenantManager);
-            return new ApplicationDbContext(_optionsBuilder.Options, defaultTenantService);
+            return new ApplicationDbContext(_optionsBuilder.Options, defaultTenantService, _logger);
         }
 
         var tenantSettings = _tenantManager.GetTenantAsync(tenantId).GetAwaiter().GetResult();
@@ -39,6 +46,6 @@ public class TenantDbContextFactory : ITenantDbContextFactory<ApplicationDbConte
             new HttpContextAccessor { HttpContext = new DefaultHttpContext() },
             _tenantManager);
 
-        return new ApplicationDbContext(_optionsBuilder.Options, tenantService);
+        return new ApplicationDbContext(_optionsBuilder.Options, tenantService, _logger);
     }
 }

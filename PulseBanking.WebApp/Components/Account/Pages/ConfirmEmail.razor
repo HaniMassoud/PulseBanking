@@ -4,7 +4,9 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 
-@inject UserManager<IdentityUser> UserManager
+@using PulseBanking.Domain.Entities
+
+@inject UserManager<CustomIdentityUser> UserManager
 @inject IdentityRedirectManager RedirectManager
 
 <PageTitle>Confirm email</PageTitle>

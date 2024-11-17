@@ -2,9 +2,10 @@
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
+@using PulseBanking.Domain.Entities
 
-@inject SignInManager<IdentityUser> SignInManager
-@inject UserManager<IdentityUser> UserManager
+@inject SignInManager<CustomIdentityUser> SignInManager
+@inject UserManager<CustomIdentityUser> UserManager
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<LoginWithRecoveryCode> Logger
 
@@ -34,7 +35,7 @@
 
 @code {
     private string? message;
-    private IdentityUser user = default!;
+    private CustomIdentityUser user = default!;
 
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = new();

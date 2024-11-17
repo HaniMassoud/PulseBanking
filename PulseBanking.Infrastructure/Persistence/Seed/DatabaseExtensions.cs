@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PulseBanking.Application.Interfaces;
+using PulseBanking.Domain.Entities;
 
 namespace PulseBanking.Infrastructure.Persistence.Seed;
 
@@ -18,8 +19,8 @@ public static class DatabaseExtensions
         try
         {
             var context = services.GetRequiredService<ApplicationDbContext>();
-            var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
-            var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+            var userManager = services.GetRequiredService<UserManager<CustomIdentityUser>>();
+            var roleManager = services.GetRequiredService<RoleManager<CustomIdentityRole>>();
             var logger = services.GetRequiredService<ILogger<ApplicationDbContext>>();
             var tenantManager = services.GetRequiredService<ITenantManager>();
 

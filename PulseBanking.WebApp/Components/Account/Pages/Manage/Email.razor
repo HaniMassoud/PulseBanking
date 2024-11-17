@@ -5,9 +5,10 @@
 @using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
+@using PulseBanking.Domain.Entities
 
-@inject UserManager<IdentityUser> UserManager
-@inject IEmailSender<IdentityUser> EmailSender
+@inject UserManager<CustomIdentityUser> UserManager
+@inject IEmailSender<CustomIdentityUser> EmailSender
 @inject IdentityUserAccessor UserAccessor
 @inject NavigationManager NavigationManager
 
@@ -54,7 +55,7 @@
 
 @code {
     private string? message;
-    private IdentityUser user = default!;
+    private CustomIdentityUser user = default!;
     private string? email;
     private bool isEmailConfirmed;
 

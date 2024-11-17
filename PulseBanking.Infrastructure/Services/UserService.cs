@@ -1,17 +1,21 @@
 ﻿// Services/UserService.cs
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using PulseBanking.Application.Features.Users.Common;
+using PulseBanking.Domain.Entities;
 
 public class UserService : IUserService
 {
-    private readonly UserManager<IdentityUser> _userManager;
+    private readonly UserManager<CustomIdentityUser> _userManager;
     private readonly IMapper _mapper;
+    private readonly ILogger<UserService> _logger;
 
-    public UserService(UserManager<IdentityUser> userManager, IMapper mapper)
+    public UserService(UserManager<CustomIdentityUser> userManager, IMapper mapper, ILogger<UserService> logger)
     {
         _userManager = userManager;
         _mapper = mapper;
+        _logger = logger;
     }
 
     public async Task<UserDto> GetByIdAsync(string id)
@@ -34,7 +38,33 @@ public class UserService : IUserService
 
     public async Task<IdentityResult> CreateAsync(CreateUserDto createUserDto)
     {
-        var user = _mapper.Map<IdentityUser>(createUserDto);
+        _logger.LogInformation("Creating user with the following details: " +
+            "UserName: {UserName}, " +
+            "Email: {Email}, " +
+            "PhoneNumber: {PhoneNumber}, " +
+            "Roles: {Roles}, " +
+            "TenantId: {TenantId}",
+            createUserDto.UserName,
+            createUserDto.Email,
+            createUserDto.PhoneNumber,
+            string.Join(", ", createUserDto.Roles),
+            createUserDto.TenantId);
+
+        var user = _mapper.Map<CustomIdentityUser>(createUserDto);
+
+        // Try setting TenantId using reflection
+        typeof(CustomIdentityUser)
+            .GetProperty("TenantId")
+            ?.SetValue(user, createUserDto.TenantId);
+
+        // Also try direct property setting as backup
+        if (user.GetType().GetProperty("TenantId") != null)
+        {
+            user.TenantId = createUserDto.TenantId;
+        }
+
+        _logger.LogInformation("User mapped with TenantId: {TenantId}",
+            user.GetType().GetProperty("TenantId")?.GetValue(user));
 
         var result = await _userManager.CreateAsync(user, createUserDto.Password);
 

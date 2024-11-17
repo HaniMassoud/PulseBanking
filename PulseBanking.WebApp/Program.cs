@@ -4,6 +4,7 @@ using PulseBanking.WebApp.Components;
 using PulseBanking.WebApp.Components.Account;
 using PulseBanking.WebApp.Identity;
 using PulseBanking.WebApp.Services;
+using PulseBanking.Domain.Entities;
 using PulseBanking.Infrastructure.Extensions;
 using PulseBanking.Infrastructure.Security;
 
@@ -36,10 +37,10 @@ builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
 // Identity stores
-builder.Services.AddScoped<IUserStore<IdentityUser>, ApiUserStore>();
-builder.Services.AddScoped<IRoleStore<IdentityRole>, ApiRoleStore>();
+builder.Services.AddScoped<IUserStore<CustomIdentityUser>, ApiUserStore>();
+builder.Services.AddScoped<IRoleStore<CustomIdentityRole>, ApiRoleStore>();
 
-builder.Services.AddIdentityCore<IdentityUser>(options =>
+builder.Services.AddIdentityCore<CustomIdentityUser>(options =>
 {
     options.SignIn.RequireConfirmedAccount = true;
     options.Password.RequireDigit = true;
@@ -48,6 +49,7 @@ builder.Services.AddIdentityCore<IdentityUser>(options =>
     options.Password.RequireUppercase = true;
     options.Password.RequiredLength = 8;
 })
+    .AddRoles<CustomIdentityRole>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
 
@@ -59,7 +61,7 @@ builder.Services.AddAuthentication(options =>
 })
     .AddIdentityCookies();
 
-builder.Services.AddSingleton<IEmailSender<IdentityUser>, IdentityNoOpEmailSender>();
+builder.Services.AddSingleton<IEmailSender<CustomIdentityUser>, IdentityNoOpEmailSender>();
 
 // Add Antiforgery services
 builder.Services.AddAntiforgery(options =>

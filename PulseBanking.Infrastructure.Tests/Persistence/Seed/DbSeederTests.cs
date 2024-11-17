@@ -14,9 +14,10 @@ namespace PulseBanking.Infrastructure.Tests.Persistence.Seed;
 public class DbSeederTests
 {
     private readonly Mock<ITenantService> _tenantServiceMock;
-    private readonly Mock<UserManager<IdentityUser>> _userManagerMock;
-    private readonly Mock<RoleManager<IdentityRole>> _roleManagerMock;
+    private readonly Mock<UserManager<CustomIdentityUser>> _userManagerMock;
+    private readonly Mock<RoleManager<CustomIdentityRole>> _roleManagerMock;
     private readonly Mock<ILogger<ApplicationDbContext>> _loggerMock;
+    private readonly Mock<ILogger<ApplicationDbContext>> _dbLoggerMock;
     private readonly DbContextOptions<ApplicationDbContext> _options;
 
     public DbSeederTests()
@@ -26,32 +27,32 @@ public class DbSeederTests
         _tenantServiceMock.Setup(x => x.GetCurrentTenant()).Returns(testTenant);
 
         // Set up UserManager mock with required dependencies
-        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userStoreMock = new Mock<IUserStore<CustomIdentityUser>>();
         var optionsAccessor = new Mock<IOptions<IdentityOptions>>();
         optionsAccessor.Setup(x => x.Value).Returns(new IdentityOptions());
-        var userValidators = new List<IUserValidator<IdentityUser>>();
-        var passwordValidators = new List<IPasswordValidator<IdentityUser>>();
+        var userValidators = new List<IUserValidator<CustomIdentityUser>>();
+        var passwordValidators = new List<IPasswordValidator<CustomIdentityUser>>();
         var keyNormalizer = new UpperInvariantLookupNormalizer();
         var errors = new IdentityErrorDescriber();
         var services = new Mock<IServiceProvider>();
-        var logger = new Mock<ILogger<UserManager<IdentityUser>>>();
+        var logger = new Mock<ILogger<UserManager<CustomIdentityUser>>>();
 
-        _userManagerMock = new Mock<UserManager<IdentityUser>>(
+        _userManagerMock = new Mock<UserManager<CustomIdentityUser>>(
             userStoreMock.Object,
             optionsAccessor.Object,
-            new PasswordHasher<IdentityUser>(),
-            new IUserValidator<IdentityUser>[] { },
-            new IPasswordValidator<IdentityUser>[] { },
+            new PasswordHasher<CustomIdentityUser>(),
+            new IUserValidator<CustomIdentityUser>[] { },
+            new IPasswordValidator<CustomIdentityUser>[] { },
             new UpperInvariantLookupNormalizer(),
             new IdentityErrorDescriber(),
             new Mock<IServiceProvider>().Object,
-            new Mock<ILogger<UserManager<IdentityUser>>>().Object);
+            new Mock<ILogger<UserManager<CustomIdentityUser>>>().Object);
 
         // Set up RoleManager mock with required dependencies
-        var roleStoreMock = new Mock<IRoleStore<IdentityRole>>();
-        var roleValidators = new List<IRoleValidator<IdentityRole>>();
+        var roleStoreMock = new Mock<IRoleStore<CustomIdentityRole>>();
+        var roleValidators = new List<IRoleValidator<CustomIdentityRole>>();
 
-        _roleManagerMock = new Mock<RoleManager<IdentityRole>>(
+        _roleManagerMock = new Mock<RoleManager<CustomIdentityRole>>(
             roleStoreMock.Object,
             roleValidators,
             keyNormalizer,
@@ -59,6 +60,7 @@ public class DbSeederTests
             logger.Object);
 
         _loggerMock = new Mock<ILogger<ApplicationDbContext>>();
+        _dbLoggerMock = new Mock<ILogger<ApplicationDbContext>>();
 
         _options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
@@ -70,12 +72,12 @@ public class DbSeederTests
     {
         // Arrange
         var tenantId = "test-tenant";
-        using var context = new ApplicationDbContext(_options, _tenantServiceMock.Object);
+        using var context = new ApplicationDbContext(_options, _tenantServiceMock.Object, _dbLoggerMock.Object);
 
         // Set up UserManager mock behavior
-        _userManagerMock.Setup(x => x.CreateAsync(It.IsAny<IdentityUser>(), It.IsAny<string>()))
+        _userManagerMock.Setup(x => x.CreateAsync(It.IsAny<CustomIdentityUser>(), It.IsAny<string>()))
             .ReturnsAsync(IdentityResult.Success);
-        _userManagerMock.Setup(x => x.AddToRoleAsync(It.IsAny<IdentityUser>(), It.IsAny<string>()))
+        _userManagerMock.Setup(x => x.AddToRoleAsync(It.IsAny<CustomIdentityUser>(), It.IsAny<string>()))
             .ReturnsAsync(IdentityResult.Success);
 
         // Act
@@ -101,7 +103,7 @@ public class DbSeederTests
     {
         // Arrange
         var tenantId = "test-tenant";
-        using var context = new ApplicationDbContext(_options, _tenantServiceMock.Object);
+        using var context = new ApplicationDbContext(_options, _tenantServiceMock.Object, _dbLoggerMock.Object);
 
         // Add existing customer and account
         var existingCustomer = Customer.Create(
@@ -141,7 +143,7 @@ public class DbSeederTests
     public async Task SeedDefaultTenantsAsync_ShouldCreateSystemAndDemoTenants_WhenNoTenantsExist()
     {
         // Arrange
-        using var context = new ApplicationDbContext(_options, _tenantServiceMock.Object);
+        using var context = new ApplicationDbContext(_options, _tenantServiceMock.Object, _dbLoggerMock.Object);
 
         // Act
         await DbSeeder.SeedDefaultTenantsAsync(
@@ -167,7 +169,7 @@ public class DbSeederTests
     public async Task SeedDefaultTenantsAsync_ShouldNotCreateDuplicates_WhenTenantsExist()
     {
         // Arrange
-        using var context = new ApplicationDbContext(_options, _tenantServiceMock.Object);
+        using var context = new ApplicationDbContext(_options, _tenantServiceMock.Object, _dbLoggerMock.Object);
 
         // Add an existing tenant with all required properties
         var existingTenant = new Tenant

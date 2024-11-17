@@ -10,6 +10,7 @@ using PulseBanking.Domain.Entities;
 using PulseBanking.Infrastructure.Services;
 using Microsoft.AspNetCore.Http;
 using PulseBanking.Domain.Enums;
+using Microsoft.Extensions.Logging;
 
 namespace PulseBanking.Infrastructure.Tests.Persistence;
 
@@ -18,12 +19,14 @@ public class TenantDbContextFactoryTests
     private readonly Mock<ITenantManager> _mockTenantManager;
     private readonly DbContextOptionsBuilder<ApplicationDbContext> _optionsBuilder;
     private readonly IServiceProvider _serviceProvider;
+    private readonly Mock<ILogger<ApplicationDbContext>> _mockLogger;
 
     public TenantDbContextFactoryTests()
     {
         _mockTenantManager = new Mock<ITenantManager>();
         _optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}");
+        _mockLogger = new Mock<ILogger<ApplicationDbContext>>();
 
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddSingleton(_mockTenantManager.Object);
@@ -113,7 +116,7 @@ public class TenantDbContextFactoryTests
 
         // Create a test context with tenant1
         var tenantService1 = new TenantService(new HttpContextAccessor(), _mockTenantManager.Object, "test-tenant");
-        using var context1 = new ApplicationDbContext(_optionsBuilder.Options, tenantService1);
+        using var context1 = new ApplicationDbContext(_optionsBuilder.Options, tenantService1, _mockLogger.Object);
 
         // Add test data
         var account1 = Account.Create(
@@ -133,7 +136,7 @@ public class TenantDbContextFactoryTests
 
         // Act - Create a new context with tenant filter
         var tenantService2 = new TenantService(new HttpContextAccessor(), _mockTenantManager.Object, "test-tenant");
-        using var context2 = new ApplicationDbContext(_optionsBuilder.Options, tenantService2);
+        using var context2 = new ApplicationDbContext(_optionsBuilder.Options, tenantService2, _mockLogger.Object);
         var accounts = await context2.Accounts.ToListAsync();
 
         // Assert
@@ -161,7 +164,7 @@ public class TenantDbContextFactoryTests
         var tenantService2 = new TenantService(new HttpContextAccessor(), _mockTenantManager.Object, "tenant2");
 
         // Create test data for tenant1
-        using (var context1 = new ApplicationDbContext(_optionsBuilder.Options, tenantService1))
+        using (var context1 = new ApplicationDbContext(_optionsBuilder.Options, tenantService1, _mockLogger.Object))
         {
             var account1 = Account.Create(
                 tenantId: "tenant1",
@@ -173,7 +176,7 @@ public class TenantDbContextFactoryTests
         }
 
         // Create test data for tenant2
-        using (var context2 = new ApplicationDbContext(_optionsBuilder.Options, tenantService2))
+        using (var context2 = new ApplicationDbContext(_optionsBuilder.Options, tenantService2, _mockLogger.Object))
         {
             var account2 = Account.Create(
                 tenantId: "tenant2",
@@ -185,7 +188,7 @@ public class TenantDbContextFactoryTests
         }
 
         // Act & Assert for tenant1
-        using (var context1 = new ApplicationDbContext(_optionsBuilder.Options, tenantService1))
+        using (var context1 = new ApplicationDbContext(_optionsBuilder.Options, tenantService1, _mockLogger.Object))
         {
             var tenant1Accounts = await context1.Accounts.ToListAsync();
             tenant1Accounts.Should().HaveCount(1);
@@ -193,7 +196,7 @@ public class TenantDbContextFactoryTests
         }
 
         // Act & Assert for tenant2
-        using (var context2 = new ApplicationDbContext(_optionsBuilder.Options, tenantService2))
+        using (var context2 = new ApplicationDbContext(_optionsBuilder.Options, tenantService2, _mockLogger.Object))
         {
             var tenant2Accounts = await context2.Accounts.ToListAsync();
             tenant2Accounts.Should().HaveCount(1);
@@ -201,7 +204,7 @@ public class TenantDbContextFactoryTests
         }
 
         // Cleanup
-        using (var context = new ApplicationDbContext(_optionsBuilder.Options, tenantService1))
+        using (var context = new ApplicationDbContext(_optionsBuilder.Options, tenantService1, _mockLogger.Object))
         {
             await context.Database.EnsureDeletedAsync();
         }

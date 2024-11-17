@@ -8,7 +8,7 @@ namespace PulseBanking.Infrastructure.Persistence.Seed;
 
 public static class IdentityDataSeeder
 {
-    public static async Task SeedRolesAsync(ILogger logger, RoleManager<IdentityRole> roleManager, string tenantId)
+    public static async Task SeedRolesAsync(ILogger logger, RoleManager<CustomIdentityRole> roleManager, string tenantId)
     {
         // Define default roles
         var roles = new[]
@@ -31,15 +31,16 @@ public static class IdentityDataSeeder
 
                 if (!roleExists)
                 {
-                    var role = new IdentityRole
+                    var role = new CustomIdentityRole
                     {
                         Name = roleName,
-                        NormalizedName = normalizedName
+                        NormalizedName = normalizedName,
+                        TenantId = tenantId
                     };
                     // Set TenantId through reflection since it's a shadow property
-                    roleManager.GetType()
-                        .GetProperty("TenantId")?
-                        .SetValue(role, tenantId);
+                    //roleManager.GetType()
+                    //    .GetProperty("TenantId")?
+                    //    .SetValue(role, tenantId);
 
                     var result = await roleManager.CreateAsync(role);
                     if (result.Succeeded)
@@ -63,8 +64,8 @@ public static class IdentityDataSeeder
 
     public static async Task SeedSystemAdminAsync(
         ILogger logger,
-        UserManager<IdentityUser> userManager,
-        RoleManager<IdentityRole> roleManager,
+        UserManager<CustomIdentityUser> userManager,
+        RoleManager<CustomIdentityRole> roleManager,
         string systemTenantId)
     {
         try
@@ -75,7 +76,7 @@ public static class IdentityDataSeeder
 
             if (adminUser == null)
             {
-                adminUser = new IdentityUser
+                adminUser = new CustomIdentityUser
                 {
                     UserName = adminEmail,
                     Email = adminEmail,
@@ -116,7 +117,7 @@ public static class IdentityDataSeeder
 
     public static async Task SeedTenantAdminAsync(
         ILogger logger,
-        UserManager<IdentityUser> userManager,
+        UserManager<CustomIdentityUser> userManager,
         string tenantId,
         string email,
         string password)
@@ -127,7 +128,7 @@ public static class IdentityDataSeeder
 
             if (adminUser == null)
             {
-                adminUser = new IdentityUser
+                adminUser = new CustomIdentityUser
                 {
                     UserName = email,
                     Email = email,

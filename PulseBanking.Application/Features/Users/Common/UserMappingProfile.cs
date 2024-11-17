@@ -10,7 +10,7 @@ namespace PulseBanking.Application.Features.Users.Common
         {
             CreateMap<IdentityUser, UserDto>();
 
-            CreateMap<CreateUserDto, IdentityUser>()
+            CreateMap<CreateUserDto, CustomIdentityUser>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.NormalizedUserName, opt => opt.Ignore())
                 .ForMember(dest => dest.NormalizedEmail, opt => opt.Ignore())
@@ -24,7 +24,7 @@ namespace PulseBanking.Application.Features.Users.Common
                 .ForMember(dest => dest.LockoutEnd, opt => opt.Ignore())
                 .ForMember(dest => dest.AccessFailedCount, opt => opt.MapFrom(src => 0));
 
-            CreateMap<UpdateUserDto, IdentityUser>()
+            CreateMap<UpdateUserDto, CustomIdentityUser>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.UserName, opt => opt.Ignore())
                 .ForMember(dest => dest.NormalizedUserName, opt => opt.Ignore())

@@ -1,9 +1,10 @@
 ﻿@page "/Account/Manage/ResetAuthenticator"
 
 @using Microsoft.AspNetCore.Identity
+@using PulseBanking.Domain.Entities
 
-@inject UserManager<IdentityUser> UserManager
-@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<CustomIdentityUser> UserManager
+@inject SignInManager<CustomIdentityUser> SignInManager
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<ResetAuthenticator> Logger

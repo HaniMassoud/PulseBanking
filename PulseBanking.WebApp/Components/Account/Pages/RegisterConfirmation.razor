@@ -3,9 +3,10 @@
 @using System.Text
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
+@using PulseBanking.Domain.Entities
 
-@inject UserManager<IdentityUser> UserManager
-@inject IEmailSender<IdentityUser> EmailSender
+@inject UserManager<CustomIdentityUser> UserManager
+@inject IEmailSender<CustomIdentityUser> EmailSender
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 

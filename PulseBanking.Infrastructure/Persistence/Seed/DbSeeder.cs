@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using PulseBanking.Domain.Constants;
 using PulseBanking.Domain.Entities;
 using PulseBanking.Domain.Enums;
 
@@ -11,8 +12,8 @@ public static class DbSeeder
 {
     public static async Task SeedDefaultTenantsAsync(
         ApplicationDbContext context,
-        UserManager<IdentityUser> userManager,
-        RoleManager<IdentityRole> roleManager,
+        UserManager<CustomIdentityUser> userManager,
+        RoleManager<CustomIdentityRole> roleManager,
         ILogger logger)
     {
         // Only seed if no tenants exist
@@ -78,11 +79,62 @@ public static class DbSeeder
         }
     }
 
+    public static async Task SeedRolesAsync(
+        ILogger logger,
+        RoleManager<CustomIdentityRole> roleManager,
+        string tenantId)
+    {
+        foreach (var roleName in Roles.AllRoles)
+        {
+            try
+            {
+                var normalizedName = roleName.ToUpperInvariant();
+                var roleExists = await roleManager.RoleExistsAsync(roleName);
+
+                if (!roleExists)
+                {
+                    var role = new CustomIdentityRole
+                    {
+                        Name = roleName,
+                        NormalizedName = normalizedName,
+                        TenantId = tenantId
+                    };
+
+                    // Set TenantId through reflection since it's a shadow property
+                    //typeof(CustomIdentityRole)
+                    //    .GetProperty("TenantId")?
+                    //    .SetValue(role, tenantId);
+
+                    var result = await roleManager.CreateAsync(role);
+                    if (result.Succeeded)
+                    {
+                        if (Roles.RoleDescriptions.TryGetValue(roleName, out var description))
+                        {
+                            await roleManager.AddClaimAsync(role, new System.Security.Claims.Claim("Description", description));
+                        }
+
+                        logger.LogInformation("Created role {RoleName} for tenant {TenantId}", roleName, tenantId);
+                    }
+                    else
+                    {
+                        logger.LogError("Failed to create role {RoleName}: {Errors}",
+                            roleName,
+                            string.Join(", ", result.Errors.Select(e => e.Description)));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error seeding role {RoleName}", roleName);
+            }
+        }
+    }
+
     public static async Task SeedDataAsync(
         ApplicationDbContext context,
         string tenantId,
-        UserManager<IdentityUser> userManager,
-        RoleManager<IdentityRole> roleManager,
+        UserManager<CustomIdentityUser> userManager,
+        RoleManager<CustomIdentityRole> roleManager,
         ILogger logger)
     {
         // Seed roles for new tenant
@@ -132,7 +184,7 @@ public static class DbSeeder
             await context.SaveChangesAsync();
 
             // Create a user account for the customer
-            var customerUser = new IdentityUser
+            var customerUser = new CustomIdentityUser
             {
                 UserName = customer.Email,
                 Email = customer.Email,

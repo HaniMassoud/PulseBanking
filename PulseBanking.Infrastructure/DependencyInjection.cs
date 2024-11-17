@@ -12,6 +12,7 @@ using PulseBanking.Infrastructure.Persistence.UnitOfWork;
 using PulseBanking.Infrastructure.Services.Events;
 using PulseBanking.Infrastructure.Security;
 using Microsoft.AspNetCore.Antiforgery;
+using PulseBanking.Domain.Entities;
 
 
 namespace PulseBanking.Infrastructure;
@@ -37,7 +38,7 @@ public static class DependencyInjection
         });
 
         // Register Identity
-        services.AddIdentity<IdentityUser, IdentityRole>(options =>
+        services.AddIdentity<CustomIdentityUser, CustomIdentityRole>(options =>
         {
             // Configure identity options here
             options.Password.RequireDigit = true;
@@ -50,6 +51,8 @@ public static class DependencyInjection
             options.SignIn.RequireConfirmedEmail = true;
         })
         .AddEntityFrameworkStores<ApplicationDbContext>()
+        .AddUserManager<UserManager<CustomIdentityUser>>()
+        .AddRoleManager<RoleManager<CustomIdentityRole>>()
         .AddDefaultTokenProviders();
 
         // Configure antiforgery
